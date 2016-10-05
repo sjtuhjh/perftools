@@ -86,6 +86,7 @@ if [ "$(which apt-get)" ] ; then
     INSTALL_CMD="apt-get"
 fi
 
+${SUDO_PREFIX} ${INSTALL_CMD} install -yq babeltrace
 ${SUDO_PREFIX} ${INSTALL_CMD} install -yq openssl
 ${SUDO_PREFIX} ${INSTALL_CMD} install -yq libssl-dev
 ${SUDO_PREFIX} ${INSTALL_CMD} install -yq libpopt-dev
