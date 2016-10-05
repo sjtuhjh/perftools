@@ -1,0 +1,19 @@
+#!/usr/bin/env stap
+
+probe tcp.sendmsg {
+    printf("%s: TCP send messages [ family = %d, size = %d] \n", execname(), family, size)
+}
+
+probe tcp.recvmsg {
+    printf("%s: TCP receive messages [ socket = %d, size = %d] \n", execname(), sock, size)
+}
+
+probe udp.sendmsg {
+    printf("%s: UDP send messages [ family = %d, size = %d] \n", execname(), family, size)
+}
+
+probe udp.recvmsg {
+    printf("%s: UDP receive messages [ socket = %d, size = %d] \n", execname(), sock, size)
+}
+
+

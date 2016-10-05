@@ -1,0 +1,21 @@
+#!/usr/sbin/stap
+
+#An example to measure system call by using queues
+
+probe begin {
+    qsq_start("syscall")
+    qs_wait("syscall")
+}
+
+probe syscall.* {
+    qs_run("syscall")
+}
+
+probe syscall.*.return {
+    qs_done("syscall")
+    qs_wait("syscall")
+}
+
+probe end {
+    qsq_print("syscall")
+}

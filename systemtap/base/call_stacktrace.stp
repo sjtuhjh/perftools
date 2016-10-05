@@ -1,0 +1,11 @@
+#!/usr/bin/env stap
+
+probe kernel.function("tcp_sendmsg").return { 
+    if ($return > 100) {
+        printf("In process [%s] \n", execname())
+        print_regs()
+        print_backtrace()
+    }
+}
+
+

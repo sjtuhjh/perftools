@@ -1,0 +1,12 @@
+#!/usr/sbin/stap
+
+# stap -g <>
+
+probe syscall.mkdir.return {
+    if (isinstr(user_string($pathname), "notcreate")) {
+        printf("Hit result, change result from %d to 1\n", $return)
+        $return = 1
+    }
+}
+
+

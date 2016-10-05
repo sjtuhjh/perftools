@@ -1,0 +1,20 @@
+#!/usr/bin/env stap
+
+global addr
+
+probe kernel.statement("do_dentry_open@fs/open.c:741") {
+    if ($f != NULL && $f->f_op != NULL) {
+        printf("Open address:%x\n", $f->f_op->open)
+        addr = sprintf("%p", $f->f_op->open)
+        print_stack(addr)
+        exit()
+   }
+}
+
+#
+# Usage: stap -g <stp_file>
+#
+probe kernel.statement(0xffffffff8127a4f0).absolute {
+#probe kernel.statement($addr).absolute {
+   printf("functionname:%s", probefunc())
+}

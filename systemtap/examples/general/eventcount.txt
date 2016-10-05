@@ -1,0 +1,30 @@
+# stap eventcount.stp 'kernel.trace("mm_page*")'
+
+Starting event counting at Thu May 12 17:39:17 2016 EDT, unfiltered
+Incremental reporting (max 20 lines, sorted by count) every 10 s
+Period time elapsed: 3000 ms, 7412 events, 7412 after filtering.
+TID                    COUNT (Hz)      EVENT
+---                    ----------      -----
+ffmpeg(97080)          1282 (427.33)   kernel.trace("kmem:mm_page_free")
+cat(97078)             1282 (427.33)   kernel.trace("kmem:mm_page_alloc")
+ffmpeg(97082)          558 (186.00)    kernel.trace("kmem:mm_page_pcpu_drain")
+ffmpeg(97082)          552 (184.00)    kernel.trace("kmem:mm_page_free")
+cat(97081)             552 (184.00)    kernel.trace("kmem:mm_page_alloc")
+ffmpeg(97080)          403 (134.33)    kernel.trace("kmem:mm_page_alloc_zone_locked")
+ffmpeg(97082)          372 (124.00)    kernel.trace("kmem:mm_page_alloc_zone_locked")
+ffmpeg(97080)          341 (113.66)    kernel.trace("kmem:mm_page_pcpu_drain")
+qemu-system-x86(3426)  303 (101.00)    kernel.trace("kmem:mm_page_free")
+qemu-system-x86(3426)  302 (100.66)    kernel.trace("kmem:mm_page_alloc")
+ffmpeg(97080)          255 (85.00)     kernel.trace("kmem:mm_page_alloc")
+cat(97081)             248 (82.66)     kernel.trace("kmem:mm_page_alloc_zone_locked")
+cat(97078)             217 (72.33)     kernel.trace("kmem:mm_page_alloc_zone_locked")
+ffmpeg(97082)          170 (56.66)     kernel.trace("kmem:mm_page_alloc")
+nfsd(3276)             142 (47.33)     kernel.trace("kmem:mm_page_alloc")
+nfsd(3276)             120 (40.00)     kernel.trace("kmem:mm_page_free")
+ntpd(56084)            61 (20.33)      kernel.trace("kmem:mm_page_free")
+ntpd(56084)            61 (20.33)      kernel.trace("kmem:mm_page_alloc")
+nfsd(3276)             31 (10.33)      kernel.trace("kmem:mm_page_alloc_zone_locked")
+ntpd(56084)            31 (10.33)      kernel.trace("kmem:mm_page_pcpu_drain")
+[...]
+^C
+Finished event counting at Thu May 12 17:39:30 2016 EDT.

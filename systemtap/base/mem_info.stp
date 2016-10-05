@@ -1,0 +1,32 @@
+#!/usr/sbin/stap
+
+global process
+global uprocess
+
+probe kernel.function("sys_mmap") {
+    process[execname(), ppid(), pid(), tid(),  cpu()] += $len
+}
+
+
+probe kernel.function("sys_munmap") {
+    uprocess[execname(), ppid(), pid(), tid(), cpu()] += $len
+}
+
+probe begin {
+    printf("%20s %5s %5s %5s %11s %3s\n","Process", "PPID", "PID", "TID",  "SZ(kb)", "CPU")
+}
+
+probe timer.s(5) {
+    foreach ([exec, ppid, pid, tid, cpuid] in process) {
+        sizekb = process[exec, ppid, pid, tid,  cpuid] / 1024
+        printf("%20s %5d %5d %5d %11d %3d\n", exec, ppid, pid, tid, sizekb, cpuid)
+    }
+
+    foreach ([exec, ppid, pid, tid, cpuid] in uprocess) {
+        sizekb = uprocess[exec, ppid, pid, tid, cpuid] / 1024
+        printf("%20s %5d %5d %5d %11d %3d\n", exec, ppid, pid, tid, sizekb, cpuid)
+    }
+    
+    delete process
+    delete uprocess
+}

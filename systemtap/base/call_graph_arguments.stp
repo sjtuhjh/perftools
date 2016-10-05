@@ -1,0 +1,10 @@
+#!/usr/bin/env stap
+
+probe kernel.function("tcp_sendmsg") { 
+   printf("%s -> %s, arguments=%d, %d, %d\n", thread_indent(2), probefunc(), $sk->sk_socket->state, $msg->msg_flags, $size)
+}
+
+probe kernel.function("tcp_sendmsg").return {
+   printf("%s <- %s, return=%d\n", thread_indent(-2), probefunc(), $return)
+}
+

@@ -1,0 +1,37 @@
+#!/usr/sbin/stap
+
+global ioreq
+global allreq
+global starttime
+
+
+probe ioblock.request {
+    ioreq[gettimeofday_s(), execname(), devname, rw] <<< size
+    allreq++
+}
+
+probe begin {
+    starttime = gettimeofday_s()
+    printf("%24s %20s %6s %10s %10s %10s \n", "Time", "Process", "Device", "#Requests", "Read KB", "Write KB")
+}
+
+probe timer.s(5) {
+    foreach ([time, exec, dev, rw] in ioreq) {
+        date = ctime(time)
+        ionum = @count(ioreq[time, exec, dev, rw])
+        if (rw == 0) {
+            read = @sum(ioreq[time, exec, dev, rw])
+        } else {
+            write = @sum(ioreq[time, exec, dev, rw])
+        }
+ 
+        printf("%10s %20s %6s %10d %10d %10d\n", date, exec, dev, ionum, read, write)
+    }
+    
+    delete ioreq
+}
+
+
+probe end {
+    printf("Number of IO Block Request in a %d sec: %d\n", gettimeofday_s() - starttime, allreq)
+}

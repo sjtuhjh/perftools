@@ -1,0 +1,8 @@
+#!/usr/sbin/stap
+
+
+probe begin {
+    system("ls -al")
+}
+
+

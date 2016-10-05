@@ -1,0 +1,27 @@
+#!/usr/sbin/stap
+
+global time
+probe syscall.read {
+    time[cpu(), pid(), tid()] = gettimeofday_ns()
+    #printf("Bufaddr=%x, number=%d, fd=%d\n", buf_uaddr, count, fd)
+}
+
+probe syscall.read.return { 
+    if ( execname() == "firefox") {
+        if (time[cpu(), pid(), tid()]) {
+             printf("syscall::%s[cpu=%d, pid=%d]: read took %d ns to execute \n", execname(), cpu(), pid(), gettimeofday_ns() - time[cpu(), pid(), tid()])
+             delete time[cpu(), pid(), tid()]
+        }
+    }
+   
+}
+
+probe kernel.function("sys_read").return {
+    if ( execname() == "firefox") {
+        if (time[cpu(), pid(), tid()]) {
+             printf("kernel::%s[cpu=%d, pid=%d]: read took %d ns to execute \n", execname(), cpu(), pid(), gettimeofday_ns() - time[cpu(), pid(), tid()])
+             #delete time[cpu(), pid(), tid()]
+        }
+    }
+}
+

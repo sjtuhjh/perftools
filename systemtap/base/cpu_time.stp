@@ -1,0 +1,23 @@
+#!/usr/sbin/stap
+
+global sample
+global time
+
+probe timer.profile {
+    sample[execname(), tid()] <<< cpu()
+}
+
+probe begin {
+    time = gettimeofday_s()
+}
+
+probe end {
+    foreach ([p, t] in sample) {
+       printf("process:%-20s TID:%5d \ncpu\tsamples\n", p, t)
+       print (@hist_linear(sample[p,t], 0, 120, 1))
+    }
+
+    time = gettimeofday_s() - time
+    printf("\nTotal............................:%5d secs.\n", time)
+}
+

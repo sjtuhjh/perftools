@@ -1,0 +1,18 @@
+#!/usr/bin/env stap
+
+probe signal.send {
+    printf("Signal sent :%s(%d, shared=%d) from %s(pid=%d) to %s by %d\n", sig_name, sig, shared, execname(), sig_pid,  pid_name, uid());
+}
+
+#probe signal.check_ignored {
+#    printf("Signal %s checked by %s ...", sig_name, pid_name);
+#}
+
+probe signal.check_ignored.return {
+    if ($return) {
+        printf("Ignored \n")
+    } else {
+        printf("Accept \n")
+    }
+}
+

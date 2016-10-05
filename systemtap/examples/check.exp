@@ -1,0 +1,143 @@
+# check.exp
+#
+# This script searches the systemtap.examples directory for .meta files
+# The .meta files contain information categorizing the script.  The
+# .meta files are composed of lines of tags. Each tag is followed by a
+# value.
+#
+# To restrict scripts to test, set the CHECK_ONLY environment variable.
+# For example, to only test the badname and fntimes scripts, run:
+#
+#    make installcheck RUNTESTFLAGS="check.exp" CHECK_ONLY="badname fntimes"
+
+#open the file and read in all the lines of data in FILE
+#return a string with the data
+proc get_meta_data { FILE } {
+    set meta_data ""
+    catch {
+        set fl [open "$FILE" RDONLY]
+	set meta_data [read -nonewline $fl]
+	close $fl
+    }
+    return $meta_data
+}
+
+#extract value for TAG from string META_DATA
+#if there is no matching tag return ""
+proc extract_tag { META_DATA TAG } {
+    set taglines ""
+    set value ""
+    set expr "^$TAG: \[^\r\n\]*"
+    regexp -line -all $expr $META_DATA taglines
+    set expr "^$TAG: "
+    regsub -line $expr $taglines "" value
+    verbose -log "meta taglines '$taglines' tag '$TAG' value '$value'"
+    return $value
+}
+
+proc run_command { test action command } {
+    #FIXME tcl says that single quotes not dealt with
+    if { $command != "" } then {
+	# use stress instead of sleep if time >= 1
+	if {[file executable /usr/bin/stress]} {
+	    regsub {sleep ([1-9])} $command {mkdir /tmp/$$; cd /tmp/$$; timeout --kill=1 30 stress -c 4 -i 4 -m 4 --vm-bytes 32M -d 4 --hdd-bytes 32M -t \1} command
+	}
+	verbose -log "attempting command $command"
+	set res [catch {exec sh -c $command 2>@1} value]
+	verbose -log "OUT $value"
+	verbose -log "RC $res"
+	if { $res != 0 } { # allow failure for support
+	    if { $action != "support" } { fail "$test $action" }
+	    return $res
+	} else {
+	    pass "$test $action"
+	    return $res
+	}
+    } else {
+	untested "$test $action"
+	return 0
+    }
+}
+
+
+set src_examples [fullpath $srcdir/systemtap.examples]
+
+if {[info exists env(CHECK_ONLY)]} {
+    set name_match "-false"
+    foreach file $env(CHECK_ONLY) {
+      set name_match "$name_match -o -name $file.meta"
+    }
+    set meta_files [lsort [eval exec find $src_examples -path "*.meta" $name_match]]
+} else {
+    set meta_files [lsort [exec find $src_examples -path "*.meta"]]
+}
+
+set curdir [pwd]
+verbose -log "SAVED PWD=$curdir"
+
+foreach file $meta_files {
+    cd $curdir
+    verbose -log "PRETEST PWD=[pwd]"
+
+    set dir [file dirname $file]
+    set test [regsub {.*/testsuite/} $file ""]
+    set test [regsub {.meta} $test ""]
+    
+    set meta_data [get_meta_data $file]
+    set test_support [extract_tag "$meta_data" "test_support"]
+
+    # Do this after get_meta_data, as $file/$srcdir may be relative,
+    # and become invalid after cd $dir.
+    cd $dir
+    verbose -log "TEST PWD=[pwd]"
+    
+    # If the test has an associated tcl file, run it. More complicated
+    # feature testing can be done there.
+    set test_tcl_file [file tail ${test}.tcl]
+    if {[file exists $test_tcl_file]} {
+	verbose -log "sourcing $test_tcl_file for $test"
+	source $test_tcl_file
+    }
+
+    set command $test_support
+    set supported_p 1
+    if { $command != "" }  { # need to test support
+       set res [run_command "$test" "support" $command]
+       if { $res != 0 } { set supported_p 0 }
+    }
+
+    set build_p 1
+    if { $supported_p == 1 } {
+        set test_check [extract_tag "$meta_data" "test_check"]
+        set command $test_check
+        set res [run_command "$test" "build" $command]
+        if { $res != 0 } { set build_p 0 }
+    } else { 
+        untested "$test build" 
+	continue
+    }
+
+    set test_installcheck [extract_tag "$meta_data" "test_installcheck"]
+    # The pass/fail logic too simple and fails for some examples
+    # FIXME would like to be able to run more complicated test code
+    if {[info procs installtest_p] != "" && [installtest_p]
+	&& $test_installcheck != "" } then {
+         if { $supported_p == 1 && $build_p == 1} {
+             set command $test_installcheck
+             run_command "$test" "run" $command
+         } else { 
+             untested "$test run" 
+         }
+    }
+
+    # NB: Don't try to clean up; too dangerous & can error-out
+    # set output_type [extract_tag "$meta_data" "output"]
+    # if {$output_type == "file"} {
+    #   regexp {\-o\s+([A-Za-z0-9_\-\.]+)} $command match outfile
+    #   eval exec /bin/rm -f $dir/[glob -nocomplain $outfile*]
+    # }
+}
+
+# get back to starting point
+cd $curdir
+verbose -log "RESTORED PWD=[pwd]"
