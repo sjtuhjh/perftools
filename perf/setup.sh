@@ -10,4 +10,4 @@ if [ "$(which apt-get)" ] ; then
     INSTALL_CMD="apt-get"
 fi
 
-${SUDO_PREFIX} ${INSTALL_CMD} -yq linux-tools-common
+${SUDO_PREFIX} ${INSTALL_CMD} install -yq linux-tools-common
