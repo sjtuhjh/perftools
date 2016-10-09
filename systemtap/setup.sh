@@ -29,8 +29,13 @@ download_and_build_systamp() {
     pushd builddir > /dev/null
 
     STAP_VER="3.0"
-    ${SUDO_PREFIX} ${INSTALL_CMD} -yq libdw-dev elfutils-devel libebl-dev 
-    
+
+    ${SUDO_PREFIX} ${INSTALL_CMD} install -y -q libdw-dev 
+    ${SUDO_PREFIX} ${INSTALL_CMD} install -y -q elfutils 
+    ${SUDO_PREFIX} ${INSTALL_CMD} install -y -q elfutils-dev 
+    ${SUDO_PREFIX} ${INSTALL_CMD} install -y -q libebl-dev 
+    ${SUDO_PREFIX} ${INSTALL_CMD} install -y -q gettext
+
     if [ ! -f systemtap-${STAP_VER}.tar.gz ] ; then
         wget https://sourceware.org/systemtap/ftp/releases/systemtap-${STAP_VER}.tar.gz
     fi
@@ -52,13 +57,13 @@ if [ "$(which apt-get)" ] ; then
     add_ubuntu_source
 fi
 
-${SUDO_PREFIX} ${INSTALL_CMD} install -yq linux-source
-${SUDO_PREFIX} ${INSTALL_CMD} install -yq linux-image-${KERNEL_REL}-dbgsym
+${SUDO_PREFIX} ${INSTALL_CMD} install -y -q linux-source
+${SUDO_PREFIX} ${INSTALL_CMD} install -y -q linux-image-${KERNEL_REL}-dbgsym
 #./utils/get-dbgsym.sh
 download_and_build_systamp
-#${SUDO_PREFIX} ${INSTALL_CMD} install -yq systemtap
-#${SUDO_PREFIX} ${INSTALL_CMD} install -yq systemtap-dbgsym
-${SUDO_PREFIX} ${INSTALL_CMD} install -yq elfutils
+#${SUDO_PREFIX} ${INSTALL_CMD} install -y -q systemtap
+#${SUDO_PREFIX} ${INSTALL_CMD} install -y -q systemtap-dbgsym
+${SUDO_PREFIX} ${INSTALL_CMD} install -y -q elfutils
 ./utils/config_elfutils.sh
 
 echo "*******************************************************"
