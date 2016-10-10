@@ -42,12 +42,10 @@ download_and_build_systamp() {
 
     tar -zxvf systemtap-${STAP_VER}.tar.gz
     cd systemtap-${STAP_VER}    
-    ${SUDO_PREFIX} ./configure -prefix=/opt/systemtap -disable-docs -disable-publican -disable-refdocs
+    ${SUDO_PREFIX} ./configure -prefix=/usr -disable-docs -disable-publican -disable-refdocs
     ${SUDO_PREFIX} make 
     ${SUDO_PREFIX} make install
    
-    ${SUDO_PREFIX} ln -s /opt/systemtap/bin/stap /usr/sbin/stap
-
     popd > /dev/null
 }
 
