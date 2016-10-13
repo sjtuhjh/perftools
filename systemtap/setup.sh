@@ -31,19 +31,22 @@ download_and_build_systamp() {
 
     STAP_VER="3.0"
     ${SUDO_PREFIX} ${INSTALL_CMD} install -y ${PACKAGES}
- 
+    ${SUDO_PREFIX} ${INSTALL_CMD} install -y -q libdw-dev 
+    ${SUDO_PREFIX} ${INSTALL_CMD} install -y -q elfutils 
+    ${SUDO_PREFIX} ${INSTALL_CMD} install -y -q elfutils-dev 
+    ${SUDO_PREFIX} ${INSTALL_CMD} install -y -q libebl-dev 
+    ${SUDO_PREFIX} ${INSTALL_CMD} install -y -q gettext
+
     if [ ! -f systemtap-${STAP_VER}.tar.gz ] ; then
         wget https://sourceware.org/systemtap/ftp/releases/systemtap-${STAP_VER}.tar.gz
     fi
 
     tar -zxvf systemtap-${STAP_VER}.tar.gz
     cd systemtap-${STAP_VER}    
-    ${SUDO_PREFIX} ./configure -prefix=/opt/systemtap -disable-docs -disable-publican -disable-refdocs
+    ${SUDO_PREFIX} ./configure -prefix=/usr -disable-docs -disable-publican -disable-refdocs
     ${SUDO_PREFIX} make 
     ${SUDO_PREFIX} make install
    
-    ${SUDO_PREFIX} ln -s /opt/systemtap/bin/stap /usr/sbin/stap
-
     popd > /dev/null
 }
 
@@ -62,6 +65,10 @@ if [ -z "$(which stap)" ] ; then
     download_and_build_systamp
 fi
 
+${SUDO_PREFIX} ${INSTALL_CMD} install -y -q linux-source
+${SUDO_PREFIX} ${INSTALL_CMD} install -y -q linux-image-${KERNEL_REL}-dbgsym
+#./utils/get-dbgsym.sh
+download_and_build_systamp
 #${SUDO_PREFIX} ${INSTALL_CMD} install -y -q systemtap
 #${SUDO_PREFIX} ${INSTALL_CMD} install -y -q systemtap-dbgsym
 ${SUDO_PREFIX} ${INSTALL_CMD} install -y -q elfutils

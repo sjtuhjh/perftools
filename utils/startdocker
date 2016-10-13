@@ -1,0 +1,240 @@
+#! /bin/bash
+
+USER=`whoami`
+CFGPATH=/home/root/.docker
+CFGFILE=container_id.info
+SOURCEPATH=/home/$USER
+MOUNTPATH=/home/ubuntu
+#DOCKERIMAGE=compile/ubuntu/server:14.04
+DOCKERIMAGE=docker.io/aarch64/ubuntu:wily
+#WB_CMD=~/bin/startcontainer
+#WB_CMD=/bin/bash
+WB_CMD=""
+
+
+if [ "${1}" ] && [ "${1}" != "-d" ] ; then
+    CFGFILE="${CFGFILE}-${1}"
+fi
+
+TIME=`date "+%Y%m%d%H%M%S"`
+NAME="$USER"_"$TIME"
+SSH_PORT=""
+# privileged
+ARG=" -ti  --name $NAME -v $SOURCEPATH:$MOUNTPATH \
+	--device=/dev/loop0:/dev/loop0 --device=/dev/loop1:/dev/loop1 --device=/dev/loop2:/dev/loop2 --device=/dev/loop3:/dev/loop3  \
+	--device=/dev/loop4:/dev/loop4  --device=/dev/loop5:/dev/loop5 --device=/dev/loop6:/dev/loop7 --device=/dev/loop7:/dev/loop7 "
+
+
+ARG_For_Caliper=" -d -ti --name $NAME -v $SOURCEPATH:$MOUNTPATH  \
+	--device=/dev/loop0:/dev/loop0 --device=/dev/loop1:/dev/loop1 --device=/dev/loop2:/dev/loop2 --device=/dev/loop3:/dev/loop3  \
+	--device=/dev/loop4  --device=/dev/loop5 --device=/dev/loop6 --device=/dev/loop7 "
+
+
+PORT_MAPPING=" -p 3306:3306 -p 7000:7000 -p 7001:7001 -p 7002:7002 -p 7003:7003 -p 7004:7004 -p 7005:7005 -p 7006:7006 -p 7007:7007 -p 7008:7008 \
+               -p 7009:7009 -p 7010:7010 -p 7011:7011 -p 7012:7012 -p 7013:7013 -p 7014:7014 -p 7015:7015 -p 7016:7016 -p 7017:7017 -p 7018:7018 \
+               -p 7019:7019 -p 7020:7020 -p 7021:7021 -p 7022:7022 -p 7023:7023 -p 7024:7024 -p 7025:7025 -p 7026:7026 -p 7027:7027 -p 7028:7028 \
+               -p 7029:7029 -p 7030:7030 -p 7031:7031 "
+
+usage()
+{
+	echo " "
+	echo "Usage: startdocker [OPTIONS]"
+        echo "Options:"
+	echo "  -h | -help	   Get use info"
+	echo "  -d | -del	   Delete your current container"
+	echo " -caliper -ssh_port  Start container for caliper test, \
+		via ssh_port  to login container  "
+	echo " "
+	exit
+}
+
+get_usd_devices()
+{
+        usb_dev_list=`lshw 2>/dev/null | grep "bus info: usb" -A 12 | grep "logical name: /dev/sd" | grep -Po "(/dev/sd.*)" | sort`
+        if [ x"$usb_dev_list" != x"" ];then
+                for devs in $usb_dev_list
+                do
+                        ARG_USB_DEV="$USB_DEV --device=$devs"
+                done
+        fi
+}
+
+
+check_container_id()
+{
+	container_id_list=`docker ps -aq`
+	for id in $container_id_list
+	do
+		if [ x"$1" = x"$id" ];then
+			return 0
+		fi
+	done
+	return 1
+}
+
+delete_container()
+{
+	current_id_list=`docker ps -a | grep $USER | awk '{print $1}'`
+	if [ x"$current_id_list" != x"" ];then
+		echo "list: $current_id_list"
+		for container_id in $current_id_list
+		do
+			docker stop $container_id
+			docker rm  $container_id
+			echo "Delete your container success"
+		done
+	else
+		echo "Container had already deleted. Currently there is no available container for you"
+	fi
+	exit
+}
+
+check_ssh_port()
+{
+	TMP_PORT=$1
+	TMP_PORT=`echo $TMP_PORT | sed 's/-//' `
+	if [[ $TMP_PORT == *[0-9]* ]];then
+		echo "the ssh_port is consist of digits" >/dev/null
+        else
+		echo "the ssh_port id invalable,please check and input other one"
+		exit
+	fi
+	# ...		
+	if [ $TMP_PORT -gt 65535 ];then
+		echo "the ssh_port id invalable,it more than 65535,please check and input other one"
+		exit
+	fi
+	# ...
+	if ( netstat -tl | grep ":$TMP_PORT" > /dev/null);then
+		echo "the ssh_port is using, please use a other one"
+		exit
+	else
+		echo "the ssh_port is availible" >/dev/null
+		SSH_PORT=$TMP_PORT
+	fi
+
+}
+
+check_param()
+{
+	if [ $# -eq 0 ];then
+		echo "input rigth" >/dev/null
+	elif [ $# -eq 1 ];then
+	    case $1 in
+		-help | -h)
+	            usage
+		;;
+		-del | -d)
+		    delete_container 	        
+		;;    
+	    esac			
+	elif [ $# -eq 2 ];then
+		if [ x"$1" == x"-caliper" ];then
+		    echo "the parameter is right" >2
+		else
+		    usage
+		fi
+		check_ssh_port $2
+	else
+		usage
+	fi
+}
+
+check_right()
+{
+	USERS=`cat /etc/group | grep docker | grep $USER`
+	if [ x"$?" = x"0" ];then
+		echo "You have right to use docker." >/dev/null
+	else
+		echo "You have no rigth to use docker for building."
+                echo "Please contact lab manager for rigth."
+		exit
+	fi
+}
+
+check_cfg()
+{
+	if [ -d $CFGPATH ];then
+		if [ -f $CFGPATH/$CFGFILE ];then
+			check_param $@
+			CONTAINER_ID=`cat  $CFGPATH/$CFGFILE`		
+                        echo "check ${CONTAINER_ID}"
+			check_container_id $CONTAINER_ID
+
+			if [ x"$?" = x"0" ];then
+				echo "The container id is valid."
+				return 0
+			else
+				echo "The container id is invalid."
+				echo /dev/null > $CFGPATH/$CFGFILE
+				return 1
+			fi
+		else
+			touch $CFGPATH/$CFGFILE
+			chmod 0777 $CFGPATH/$CFGFILE
+			return 1
+		fi
+	else
+                echo "create new cfgfile"
+		mkdir -p $CFGPATH
+		touch $CFGPATH/$CFGFILE
+		chmod 0777 $CFGFILE
+		return 1
+	fi
+}
+
+restart_container()
+{
+	echo "Restarting container now..."
+	echo "Your container id is:$CONTAINER_ID"
+	echo "RUN \"startdocker -h\" for more information"
+	docker start -i $CONTAINER_ID
+}
+
+create_container()
+{
+	echo "Creating new container for you now..."
+	echo "Docker container have already been created for you. You can use it now!"
+	echo "RUN \"startdocker -h\" for more information"
+	if [ x"$SSH_PORT" == x"" ];then
+		#docker run $ARG  $DOCKERIMAGE $WB_CMD
+		docker run $ARG ${PORT_MAPPING} $DOCKERIMAGE
+	
+	else
+		echo $ARG_For_Caliper
+		docker run -p $SSH_PORT:22 $ARG_For_Caliper  $DOCKERIMAGE $WB_CMD
+		sleep 1
+		CONTAINER_ID=`cat  $CFGPATH/$CFGFILE`		
+		docker start -i $CONTAINER_ID		
+	fi
+        
+	current_id_list=`docker ps -a | grep $USER | awk '{print $1}'`
+        for current_id in ${current_id_list}
+        do
+           if [ -z "$(grep ${current_id} $CFGPATH/*)" ] ; then
+               echo ${current_id} > $CFGPATH/$CFGFILE
+           fi
+        done
+}
+
+main()
+{
+	check_right
+	check_cfg $@
+	if [ $? -eq 0 ]; then
+		restart_container
+	else
+	#	check_param $@
+		create_container
+	fi
+}
+
+main $@
+
+
+
+
+
+
+
+
