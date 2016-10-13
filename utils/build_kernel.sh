@@ -20,7 +20,7 @@ mv -f .config .merged.config
 make ARCH=arm64 ${CROSS_CMD} KCONFIG_ALLCONFIG=.merged.config alldefconfig
 make ARCH=arm64 ${CROSS_CMD} Image -j40
 
-make ARCH=arm64 ${CROSS_CMD} modules
+make ARCH=arm64 ${CROSS_CMD} modules -j40
 
 #if [ "$(uname -m)" == "aarch64" ] ; then
 #make ARCH=arm64 ${CROSS_CMD} modules_install
