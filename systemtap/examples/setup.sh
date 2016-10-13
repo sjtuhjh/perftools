@@ -29,11 +29,11 @@ if [ "$(which apt-get)" ] ; then
     add_ubuntu_source
 fi
 
-${SUDO_PREFIX} ${INSTALL_CMD} install -yq linux-source
-${SUDO_PREFIX} ${INSTALL_CMD} install -yq linux-image-${KERNEL_REL}-dbgsym
+${SUDO_PREFIX} ${INSTALL_CMD} install -y -q linux-source
+${SUDO_PREFIX} ${INSTALL_CMD} install -y -q linux-image-${KERNEL_REL}-dbgsym
 #./utils/get-dbgsym.sh
-${SUDO_PREFIX} ${INSTALL_CMD} install -yq systemtap
-${SUDO_PREFIX} ${INSTALL_CMD} install -yq elfutils
+${SUDO_PREFIX} ${INSTALL_CMD} install -y -q systemtap
+${SUDO_PREFIX} ${INSTALL_CMD} install -y -q elfutils
 ./utils/config_elfutils.sh
 
 echo "*******************************************************"

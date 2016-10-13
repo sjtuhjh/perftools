@@ -86,16 +86,16 @@ if [ "$(which apt-get)" ] ; then
     INSTALL_CMD="apt-get"
 fi
 
-${SUDO_PREFIX} ${INSTALL_CMD} install -yq babeltrace
-${SUDO_PREFIX} ${INSTALL_CMD} install -yq openssl
-${SUDO_PREFIX} ${INSTALL_CMD} install -yq libssl-dev
-${SUDO_PREFIX} ${INSTALL_CMD} install -yq libpopt-dev
-#${SUDO_PREFIX} ${INSTALL_CMD} install -yq liburcu
-${SUDO_PREFIX} ${INSTALL_CMD} install -yq libxml2
-${SUDO_PREFIX} ${INSTALL_CMD} install -yq libxml2-dev 
-${SUDO_PREFIX} ${INSTALL_CMD} install -yq uuid-dev
-${SUDO_PREFIX} ${INSTALL_CMD} install -yq linux-headers-$(uname -r) 
-${SUDO_PREFIX} ${INSTALL_CMD} install -yq linux-source
+${SUDO_PREFIX} ${INSTALL_CMD} install -y -q babeltrace
+${SUDO_PREFIX} ${INSTALL_CMD} install -y -q openssl
+${SUDO_PREFIX} ${INSTALL_CMD} install -y -q libssl-dev
+${SUDO_PREFIX} ${INSTALL_CMD} install -y -q libpopt-dev
+#${SUDO_PREFIX} ${INSTALL_CMD} install -y -q liburcu
+${SUDO_PREFIX} ${INSTALL_CMD} install -y -q libxml2
+${SUDO_PREFIX} ${INSTALL_CMD} install -y -q libxml2-dev 
+${SUDO_PREFIX} ${INSTALL_CMD} install -y -q uuid-dev
+${SUDO_PREFIX} ${INSTALL_CMD} install -y -q linux-headers-$(uname -r) 
+${SUDO_PREFIX} ${INSTALL_CMD} install -y -q linux-source
 #./utils/get-dbgsym.sh
 download_and_build_lttng
 
