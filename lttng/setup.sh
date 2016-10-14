@@ -87,15 +87,16 @@ if [ "$(which apt-get)" ] ; then
 fi
 
 ${SUDO_PREFIX} ${INSTALL_CMD} install -y -q babeltrace
-${SUDO_PREFIX} ${INSTALL_CMD} install -y -q openssl
-${SUDO_PREFIX} ${INSTALL_CMD} install -y -q libssl-dev
-${SUDO_PREFIX} ${INSTALL_CMD} install -y -q libpopt-dev
+${SUDO_PREFIX} ${INSTALL_CMD} install -y -q openssl*
+${SUDO_PREFIX} ${INSTALL_CMD} install -y -q libssl-dev*
+${SUDO_PREFIX} ${INSTALL_CMD} install -y -q libpopt-dev*
 #${SUDO_PREFIX} ${INSTALL_CMD} install -y -q liburcu
-${SUDO_PREFIX} ${INSTALL_CMD} install -y -q libxml2
-${SUDO_PREFIX} ${INSTALL_CMD} install -y -q libxml2-dev 
-${SUDO_PREFIX} ${INSTALL_CMD} install -y -q uuid-dev
+${SUDO_PREFIX} ${INSTALL_CMD} install -y -q libxml2*
+${SUDO_PREFIX} ${INSTALL_CMD} install -y -q uuid-dev*
+${SUDO_PREFIX} ${INSTALL_CMD} install -y -q libuuid*
 ${SUDO_PREFIX} ${INSTALL_CMD} install -y -q linux-headers-$(uname -r) 
 ${SUDO_PREFIX} ${INSTALL_CMD} install -y -q linux-source
+${SUDO_PREFIX} ${INSTALL_CMD} install -y -q popt*
 #./utils/get-dbgsym.sh
 download_and_build_lttng
 

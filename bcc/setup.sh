@@ -30,7 +30,7 @@ build_and_install_clang() {
     fi
 
     cd cmake-3.7.0-rc1  
-    #./bootstrap && make && make install
+    ./bootstrap && make && make install
     cd ..
 
     svn co http://llvm.org/svn/llvm-project/llvm/trunk llvm
@@ -74,7 +74,7 @@ build_and_install_clang() {
 
 ${SUDO_PREFIX} ${INSTALL_CMD} -y  ${PACKAGES}
 
-if [ ! -z "$(which clang)" ] ; then
+if [ -z "$(which clang)" ] ; then
     echo "Begin to download and install clang......."
     build_and_install_clang 
 fi
