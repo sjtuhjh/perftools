@@ -7,7 +7,7 @@ fi
 
 INSTALL_CMD="yum"
 KERNEL_REL="$(uname -r)"
-PACKAGES="libdwarf-devel libdwarf elfutils-devel "
+PACKAGES="wget libdwarf-devel libdwarf elfutils-devel "
 
 add_ubuntu_source() {
    if [ -z "$(grep "http://ddebs.ubuntu.com" /etc/apt/sources.list.d/*)" ] ; then
@@ -42,6 +42,12 @@ download_and_build_systamp() {
     fi
 
     tar -zxvf systemtap-${STAP_VER}.tar.gz
+
+    if [ "$(uname -m)" == "aarch64" ] ;then
+        echo "Add patch for arm64 platform ......"
+        cp -fra ../bugfix/. ./systemtap-${STAP_VER}/ 
+    fi
+
     cd systemtap-${STAP_VER}    
     ${SUDO_PREFIX} ./configure -prefix=/usr -disable-docs -disable-publican -disable-refdocs
     ${SUDO_PREFIX} make 
@@ -54,7 +60,7 @@ download_and_build_systamp() {
 KERNEL_SRC_SYM="kernel-devel kernel-debuginfo-common-${KERNEL_REL} kernel-debuginfo-${KERNEL_REL}"
 if [ "$(which apt-get)" ] ; then
     INSTALL_CMD="apt-get"
-    PACKAGES="libdw-dev elfutils-devel libebl-dev"
+    PACKAGES="wget libdw-dev elfutils-devel libebl-dev"
     add_ubuntu_source
     KERNEL_SRC_SYM="linux-source linux-image-${KERNEL_REL}-dbgsym"
 fi

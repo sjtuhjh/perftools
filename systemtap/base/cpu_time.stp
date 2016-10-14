@@ -1,4 +1,4 @@
-#!/usr/sbin/stap
+#!/usr/bin/stap
 
 global sample
 global time
