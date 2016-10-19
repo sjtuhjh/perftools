@@ -42,10 +42,10 @@ build_and_install_clang() {
     cd clang
     svn update
 
-    cd ../
-    svn co http://llvm.org/svn/llvm-project/clang-tools-extra/trunk extra
-    cd extra
-    svn update
+    #cd ../
+    #svn co http://llvm.org/svn/llvm-project/clang-tools-extra/trunk extra
+    #cd extra
+    #svn update
 
     #cd ../../projects
     #svn co http://llvm.org/svn/llvm-project/compiler-rt/trunk compiler-rt
@@ -84,8 +84,8 @@ fi
 mkdir builddir
 pushd builddir > /dev/null
 git clone https://github.com/iovisor/bcc.git
-mkdir bcc/build; cd bcc/build
-cmake .. -DCMAKE_INSTALL_PREFIX=/usr
+mkdir build_bcc; cd build_bcc
+cmake ../bcc -DCMAKE_INSTALL_PREFIX=/usr
 make
 ${SUDO_PREFIX} make install
 popd > /dev/null

@@ -1,0 +1,28 @@
+#!/usr/bin/stap
+
+global time
+global total_time 
+
+probe syscall.*.return { 
+    #if ( execname() == "mysqld") {
+         printf("syscall::%s[cpu=%d, pid=%d]: read took %d ns to execute \n", execname(), cpu(), pid(), gettimeofday_ns() - @entry(gettimeofday_us()))
+         total_time[cpu(), pid(), tid(), probefunc()] <<< (gettimeofday_us() - @entry(gettimeofday_us()))
+    #} 
+}
+
+probe timer.s(10) {
+ 
+    printf("Print probe results :\n")
+    foreach ( [cpu, pid, tid, func] in total_time) {
+        print(@hist_linear(total_time[cpu, pid, tid, func], 0, 1024, 200))
+        print("cpu:%s, pid:%s, tid:%s, func:%s, count:%s, sum:%s, min:%s, max:%s, avg:%s", 
+               cpu, pid, tid, func,
+	       @count(total_time[cpu, pid, tid, func]),
+	       @sum(total_time[cpu, pid, tid, func]),
+	       @min(total_time[cpu, pid, tid, func]),
+	       @max(total_time[cpu, pid, tid, func]),
+	       @avg(total_time[cpu, pid, tid, func]));
+    }
+    delete total_time;
+
+}

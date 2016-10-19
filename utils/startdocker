@@ -3,7 +3,7 @@
 USER=`whoami`
 CFGPATH=/home/root/.docker
 CFGFILE=container_id.info
-SOURCEPATH=/home/$USER
+SOURCEPATH=/home/huangjinhua
 MOUNTPATH=/home/ubuntu
 #DOCKERIMAGE=compile/ubuntu/server:14.04
 DOCKERIMAGE=docker.io/aarch64/ubuntu:wily
@@ -20,7 +20,7 @@ TIME=`date "+%Y%m%d%H%M%S"`
 NAME="$USER"_"$TIME"
 SSH_PORT=""
 # privileged
-ARG=" -ti  --name $NAME -v $SOURCEPATH:$MOUNTPATH \
+ARG="  -ti -v /proc:/writeable-proc  --name $NAME -v $SOURCEPATH:$MOUNTPATH \
 	--device=/dev/loop0:/dev/loop0 --device=/dev/loop1:/dev/loop1 --device=/dev/loop2:/dev/loop2 --device=/dev/loop3:/dev/loop3  \
 	--device=/dev/loop4:/dev/loop4  --device=/dev/loop5:/dev/loop5 --device=/dev/loop6:/dev/loop7 --device=/dev/loop7:/dev/loop7 "
 
