@@ -3,16 +3,15 @@
 
 import os
 import sys
-import re
 import collections
 import string
 
 """
     One tool to count the number of syscalls 
-    Usage: syscallscount.py <ftrace log> {pid_name}
+    Usage: syscallscount.py <ftrace log> 
 """
 
-def syscallcount(tracelog_name, pid_name=""):
+def syscallcount(tracelog_name):
     filehandle = open(tracelog_name)
     
     syscall_dict = collections.defaultdict(dict)
@@ -21,16 +20,17 @@ def syscallcount(tracelog_name, pid_name=""):
         if line[0] == '#':
             continue
         
-        elems = line.strip().split( )
+        elems = line.strip().split(' ')
+        while elems[1][0:1] != "[":
+            elems[1]=elems[0].strip()+elems[1].strip()
+            del elems[0]
+                  
         for index in range(len(elems)) :
             elems[index] = elems[index].strip()
 
         strindex = elems[0].rfind('-')
         taskname = elems[0][:strindex]
         pid = elems[0][strindex+1:]
-
-        if pid_name != "" and not re.search(pid_name, taskname):
-            continue
         
         syscall_dict[pid]["name"] = taskname
 
@@ -66,7 +66,11 @@ def syscallcount(tracelog_name, pid_name=""):
             syscall_dict[pid][syscall_name][input_output]["timestamp"].append(timestamp)
         else :
             if not syscall_dict[pid][syscall_name]["input"].has_key("timestamp") :
+
                 #print("ignore error:%s"%line.strip())
+                continue
+            
+            if len(syscall_dict[pid][syscall_name]["input"]["timestamp"]) == 0:
                 continue
 
             old_input_time = syscall_dict[pid][syscall_name]["input"]["timestamp"].pop(0)
@@ -117,11 +121,8 @@ def syscallcount(tracelog_name, pid_name=""):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2 :
-        print("Usage:syscallcount.py <ftrace log> {pid_name}")
+        print("Usage:syscallcount.py <ftrace log>")
     else : 
         tracelog_name = sys.argv[1]
-        pid_name = ""
-        if len(sys.argv) >= 3:
-            pid_name = sys.argv[2]
-        syscallcount(tracelog_name, pid_name)
+        syscallcount(tracelog_name)
 
