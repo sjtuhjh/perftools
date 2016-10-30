@@ -93,13 +93,13 @@ else
     done
 fi
 
-echo > set_event_pid
+echo > set_ftrace_pid
 if [ ${pid} -gt 0 ] ; then
     thread_list=($(get_thread_list ${pid}))
     for thread_id in ${thread_list[@]}
     do 
         echo "Tracing sub-thread:${thread_id}"
-        echo "${thread_id}" >> set_event_pid
+        echo "${thread_id}" >> set_ftrace_pid
     done
     
     echo "Tracing pid:${pid} including ${#thread_list[@]} threads"
