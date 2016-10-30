@@ -5,6 +5,7 @@ import os
 import sys
 import collections
 import string
+import re
 
 """
     One tool to count the number of syscalls 
@@ -20,7 +21,8 @@ def syscallcount(tracelog_name):
         if line[0] == '#':
             continue
         
-        elems = line.strip().split(' ')
+        elems = re.split(" +", line.strip())
+
         while elems[1][0:1] != "[":
             elems[1]=elems[0].strip()+elems[1].strip()
             del elems[0]
@@ -33,7 +35,6 @@ def syscallcount(tracelog_name):
         pid = elems[0][strindex+1:]
         
         syscall_dict[pid]["name"] = taskname
-
         cpuid = elems[1].strip()[1:-2]
         timestamp = string.atof(elems[3][:-2])
         
