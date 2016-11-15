@@ -30,32 +30,31 @@ build_and_install_clang() {
     make && make install
     cd ..
 
-    svn co http://llvm.org/svn/llvm-project/llvm/tags/RELEASE_370/final/ llvm
-    cd llvm
-    svn update
+    #svn co http://llvm.org/svn/llvm-project/llvm/tags/RELEASE_370/final/ llvm
+    
+    svn co http://llvm.org/svn/llvm-project/llvm/trunk/ llvm
 
-    cd tools
-    svn co http://llvm.org/svn/llvm-project/cfe/tags/RELEASE_370/final/ clang
-    cd clang
-    svn update
+    cd ./llvm/tools
+    #svn co http://llvm.org/svn/llvm-project/cfe/tags/RELEASE_370/final/ clang
+    svn co http://llvm.org/svn/llvm-project/cfe/trunk/ clang
+    cd ../
 
     #cd ../
     #svn co http://llvm.org/svn/llvm-project/clang-tools-extra/trunk extra
     #cd extra
     #svn update
 
-    #cd ../../projects
-    #svn co http://llvm.org/svn/llvm-project/compiler-rt/trunk compiler-rt
-    #cd compiler-rt
-    #svn update
-    
+    cd ./projects
+    svn co http://llvm.org/svn/llvm-project/compiler-rt/trunk compiler-rt
+    cd ../
 
-    mkdir ../../../build_clang
-    cd ../../../build_clang
+    mkdir ../build_clang
+    cd ../build_clang
   
-    #../llvm/configure 
-    cmake  ../llvm
-    cmake --build .
+    #cmake  ../llvm 
+    cmake   -G "Unix Makefiles" -DLLVM_TARGETS_TO_BUILD="BPF;AArch64" -DCMAKE_BUILD_TYPE=Release ../llvm  
+    #make -j32
+    cmake --build . --parallel=32
     cmake --build . --target install
 
     #make -j32
@@ -71,7 +70,7 @@ build_and_install_clang() {
 
 ${SUDO_PREFIX} ${INSTALL_CMD} -y  ${PACKAGES}
 
-if [ -z "$(which clang)" ] ; then
+if [ ! -z "$(which clang)" ] ; then
     echo "Begin to download and install clang......."
     build_and_install_clang 
 fi
