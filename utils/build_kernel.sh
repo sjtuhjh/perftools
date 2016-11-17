@@ -22,6 +22,8 @@ make ARCH=arm64 ${CROSS_CMD} Image -j40
 
 make ARCH=arm64 ${CROSS_CMD} modules -j40
 
+#make headers_install ARCH=arm64 INSTALL_HDR_PATH=/usr
+
 #if [ "$(uname -m)" == "aarch64" ] ; then
 #make ARCH=arm64 ${CROSS_CMD} modules_install
 #make ARCH=arm64 install

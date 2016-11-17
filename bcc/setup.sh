@@ -26,17 +26,19 @@ build_and_install_clang() {
     fi
 
     cd cmake-3.7.0-rc1  
-    ./bootstrap --parallel=32
-    make && make install
+    ./bootstrap --parallel=32 --bindir=/bin/
+    make
+    #Remove old cmake
+    ${SUDO_PREFIX} yum remove -y cmake
+    ${SUDO_PREFIX} make install
     cd ..
 
-    #svn co http://llvm.org/svn/llvm-project/llvm/tags/RELEASE_370/final/ llvm
-    
-    svn co http://llvm.org/svn/llvm-project/llvm/trunk/ llvm
+    svn co http://llvm.org/svn/llvm-project/llvm/tags/RELEASE_390/final/ llvm
+    #svn co http://llvm.org/svn/llvm-project/llvm/trunk/ llvm
 
     cd ./llvm/tools
-    #svn co http://llvm.org/svn/llvm-project/cfe/tags/RELEASE_370/final/ clang
-    svn co http://llvm.org/svn/llvm-project/cfe/trunk/ clang
+    svn co http://llvm.org/svn/llvm-project/cfe/tags/RELEASE_390/final/ clang
+    #svn co http://llvm.org/svn/llvm-project/cfe/trunk/ clang
     cd ../
 
     #cd ../
@@ -44,16 +46,16 @@ build_and_install_clang() {
     #cd extra
     #svn update
 
-    cd ./projects
-    svn co http://llvm.org/svn/llvm-project/compiler-rt/trunk compiler-rt
-    cd ../
+    #cd ./projects
+    #svn co http://llvm.org/svn/llvm-project/compiler-rt/trunk compiler-rt
+    #cd ../
 
     mkdir ../build_clang
     cd ../build_clang
   
     #cmake  ../llvm 
-    cmake   -G "Unix Makefiles" -DLLVM_TARGETS_TO_BUILD="BPF;AArch64" -DCMAKE_BUILD_TYPE=Release ../llvm  
-    #make -j32
+    cmake -DCMAKE_BUILD_TYPE=Release ../llvm  
+    make -j32
     cmake --build . --parallel=32
     cmake --build . --target install
 
