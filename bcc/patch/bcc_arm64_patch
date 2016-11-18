@@ -1,0 +1,74 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 9de4b70..a640f3f 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -11,6 +11,10 @@ include(cmake/GetGitRevisionDescription.cmake)
+ include(cmake/version.cmake)
+ include(GNUInstallDirs)
+ 
++if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
++  add_definitions(-D__aarch64__)
++endif()
++
+ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+ 
+ if(NOT PYTHON_ONLY)
+diff --git a/src/cc/export/helpers.h b/src/cc/export/helpers.h
+index a5afa44..4b57240 100644
+--- a/src/cc/export/helpers.h
++++ b/src/cc/export/helpers.h
+@@ -448,6 +448,16 @@ int bpf_usdt_readarg_p(int argc, struct pt_regs *ctx, void *buf, u64 len) asm("l
+ #define PT_REGS_RC(ctx)		((ctx)->ax)
+ #define PT_REGS_IP(ctx)		((ctx)->ip)
+ #define PT_REGS_SP(ctx)		((ctx)->sp)
++#elif defined(__aarch64__)
++#define PT_REGS_PARM1(ctx) ((ctx)->regs[0])
++#define PT_REGS_PARM2(ctx) ((ctx)->regs[1])
++#define PT_REGS_PARM3(ctx) ((ctx)->regs[2])
++#define PT_REGS_PARM4(ctx) ((ctx)->regs[3])
++#define PT_REGS_PARM5(ctx) ((ctx)->regs[4])
++#define PT_REGS_RET(ctx) ((ctx)->regs[30])
++#define PT_REGS_FP(ctx) ((ctx)->regs[29]) /* Works only with CONFIG_FRAME_POINTER */
++#define PT_REGS_RC(ctx) ((ctx)->regs[0])
++#define PT_REGS_SP(ctx) ((ctx)->sp)
+ #else
+ #error "bcc does not support this platform yet"
+ #endif
+diff --git a/src/cc/frontends/clang/b_frontend_action.cc b/src/cc/frontends/clang/b_frontend_action.cc
+index cc0a1fc..f5f1c18 100644
+--- a/src/cc/frontends/clang/b_frontend_action.cc
++++ b/src/cc/frontends/clang/b_frontend_action.cc
+@@ -38,9 +38,15 @@ const char *calling_conv_regs_x86[] = {
+ };
+ const char *calling_conv_regs_ppc[] = {"gpr[3]", "gpr[4]", "gpr[5]",
+                                        "gpr[6]", "gpr[7]", "gpr[8]"};
++
++const char *calling_conv_regs_aarch64[] = {"regs[0]", "regs[1]", "regs[2]",
++                                       "regs[3]", "regs[4]", "regs[5]"};
++
+ // todo: support more archs
+ #if defined(__powerpc__)
+ const char **calling_conv_regs = calling_conv_regs_ppc;
++#elif defined(__aarch64__)
++const char **calling_conv_regs = calling_conv_regs_aarch64;
+ #else
+ const char **calling_conv_regs = calling_conv_regs_x86;
+ #endif
+diff --git a/src/cc/frontends/clang/loader.cc b/src/cc/frontends/clang/loader.cc
+index 4e602e1..d4cfa92 100644
+--- a/src/cc/frontends/clang/loader.cc
++++ b/src/cc/frontends/clang/loader.cc
+@@ -135,9 +135,12 @@ int ClangLoader::parse(unique_ptr<llvm::Module> *mod, unique_ptr<vector<TableDes
+   // set up the command line argument wrapper
+ #if defined(__powerpc64__)
+   driver::Driver drv("", "ppc64le-unknown-linux-gnu", diags);
+-#else
++#elif defined(__aarch64__)
++  driver::Driver drv("", "aarch64-unknown-linux-gnu", diags);
++#else 
+   driver::Driver drv("", "x86_64-unknown-linux-gnu", diags);
+ #endif
++  
+   drv.setTitle("bcc-clang-driver");
+   drv.setCheckInputsExist(false);
+ 

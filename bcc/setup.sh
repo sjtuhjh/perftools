@@ -72,7 +72,7 @@ build_and_install_clang() {
 
 ${SUDO_PREFIX} ${INSTALL_CMD} -y  ${PACKAGES}
 
-if [ ! -z "$(which clang)" ] ; then
+if [ -z "$(which clang)" ] ; then
     echo "Begin to download and install clang......."
     build_and_install_clang 
 fi
@@ -82,11 +82,15 @@ fi
 mkdir builddir
 pushd builddir > /dev/null
 git clone https://github.com/iovisor/bcc.git
+
+echo "Apply ARM64 patch......"
+cd bcc
+git apply ../../patch/bcc_arm64_patch
+cd ..
+
 mkdir build_bcc; cd build_bcc
 cmake ../bcc -DCMAKE_INSTALL_PREFIX=/usr
 make -j 32
 ${SUDO_PREFIX} make install
 popd > /dev/null
-
-
 
