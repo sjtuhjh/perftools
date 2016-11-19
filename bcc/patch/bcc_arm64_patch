@@ -55,10 +55,20 @@ index cc0a1fc..f5f1c18 100644
  const char **calling_conv_regs = calling_conv_regs_x86;
  #endif
 diff --git a/src/cc/frontends/clang/loader.cc b/src/cc/frontends/clang/loader.cc
-index 4e602e1..d4cfa92 100644
+index 4e602e1..d2ff0db 100644
 --- a/src/cc/frontends/clang/loader.cc
 +++ b/src/cc/frontends/clang/loader.cc
-@@ -135,9 +135,12 @@ int ClangLoader::parse(unique_ptr<llvm::Module> *mod, unique_ptr<vector<TableDes
+@@ -104,6 +104,9 @@ int ClangLoader::parse(unique_ptr<llvm::Module> *mod, unique_ptr<vector<TableDes
+   // 22 Jul 2016. Also see bcc #615.
+   vector<const char *> flags_cstr({"-O0", "-emit-llvm", "-I", dstack.cwd(),
+                                    "-Wno-deprecated-declarations",
++                                   "-Wno-asm-operand-widths",
++                                   "-Wno-implicit-function-declaration", 
++                                   "-Wno-tautological-compare",
+                                    "-Wno-gnu-variable-sized-type-not-at-end",
+                                    "-fno-color-diagnostics",
+                                    "-x", "c", "-c", abs_file.c_str()});
+@@ -135,9 +138,12 @@ int ClangLoader::parse(unique_ptr<llvm::Module> *mod, unique_ptr<vector<TableDes
    // set up the command line argument wrapper
  #if defined(__powerpc64__)
    driver::Driver drv("", "ppc64le-unknown-linux-gnu", diags);
@@ -72,3 +82,691 @@ index 4e602e1..d4cfa92 100644
    drv.setTitle("bcc-clang-driver");
    drv.setCheckInputsExist(false);
  
+diff --git a/src/python/bcc/__init__.py b/src/python/bcc/__init__.py
+index d13c03d..9f72362 100644
+--- a/src/python/bcc/__init__.py
++++ b/src/python/bcc/__init__.py
+@@ -54,6 +54,8 @@ class SymbolCache(object):
+         psym = ct.pointer(sym)
+         if lib.bcc_symcache_resolve(self.cache, addr, psym) < 0:
+             return "[unknown]", 0
++        if sym.demangle_name == None:
++            return "[unknown]", 0
+         return sym.demangle_name.decode(), sym.offset
+ 
+     def resolve_name(self, name):
+diff --git a/tools/argdist.py b/tools/argdist.py
+index 2e3aad5..62a2443 100755
+--- a/tools/argdist.py
++++ b/tools/argdist.py
+@@ -631,6 +631,7 @@ argdist -p 2780 -z 120 \\
+                 bpf_source = """
+ struct __string_t { char s[%d]; };
+ 
++#define __ASM_ARCH_TIMER_H
+ #include <uapi/linux/ptrace.h>
+                 """ % self.args.string_size
+                 for include in (self.args.include or []):
+diff --git a/tools/bashreadline.py b/tools/bashreadline.py
+index 2c1ff2a..3adfba3 100755
+--- a/tools/bashreadline.py
++++ b/tools/bashreadline.py
+@@ -18,6 +18,7 @@ import ctypes as ct
+ 
+ # load BPF program
+ bpf_text = """
++#define __ASM_ARCH_TIMER_H
+ #include <uapi/linux/ptrace.h>
+ 
+ struct str_t {
+diff --git a/tools/biolatency.py b/tools/biolatency.py
+index 46bebc4..dfa6bce 100755
+--- a/tools/biolatency.py
++++ b/tools/biolatency.py
+@@ -46,6 +46,7 @@ debug = 0
+ 
+ # define BPF program
+ bpf_text = """
++#define __ASM_ARCH_TIMER_H
+ #include <uapi/linux/ptrace.h>
+ #include <linux/blkdev.h>
+ 
+diff --git a/tools/biosnoop.py b/tools/biosnoop.py
+index bed6ded..9474180 100755
+--- a/tools/biosnoop.py
++++ b/tools/biosnoop.py
+@@ -20,6 +20,7 @@ import re
+ 
+ # load BPF program
+ b = BPF(text="""
++#define __ASM_ARCH_TIMER_H
+ #include <uapi/linux/ptrace.h>
+ #include <linux/blkdev.h>
+ 
+diff --git a/tools/biotop.py b/tools/biotop.py
+index 51ecd09..dabda45 100755
+--- a/tools/biotop.py
++++ b/tools/biotop.py
+@@ -56,6 +56,7 @@ def signal_ignore(signal, frame):
+ 
+ # load BPF program
+ b = BPF(text="""
++#define __ASM_ARCH_TIMER_H
+ #include <uapi/linux/ptrace.h>
+ #include <linux/blkdev.h>
+ 
+diff --git a/tools/bitesize.py b/tools/bitesize.py
+index 9141ab6..d4c56b4 100755
+--- a/tools/bitesize.py
++++ b/tools/bitesize.py
+@@ -16,6 +16,7 @@ from bcc import BPF
+ from time import sleep
+ 
+ bpf_text = """
++#define __ASM_ARCH_TIMER_H
+ #include <uapi/linux/ptrace.h>
+ #include <linux/blkdev.h>
+ 
+diff --git a/tools/btrfsdist.py b/tools/btrfsdist.py
+index 6189da0..056b8d6 100755
+--- a/tools/btrfsdist.py
++++ b/tools/btrfsdist.py
+@@ -56,6 +56,7 @@ debug = 0
+ 
+ # define BPF program
+ bpf_text = """
++#define __ASM_ARCH_TIMER_H
+ #include <uapi/linux/ptrace.h>
+ #include <linux/fs.h>
+ #include <linux/sched.h>
+diff --git a/tools/btrfsslower.py b/tools/btrfsslower.py
+index fcc155e..0b317a0 100755
+--- a/tools/btrfsslower.py
++++ b/tools/btrfsslower.py
+@@ -59,6 +59,7 @@ debug = 0
+ 
+ # define BPF program
+ bpf_text = """
++#define __ASM_ARCH_TIMER_H
+ #include <uapi/linux/ptrace.h>
+ #include <linux/fs.h>
+ #include <linux/sched.h>
+diff --git a/tools/cachestat.py b/tools/cachestat.py
+index 868b370..ab7147e 100755
+--- a/tools/cachestat.py
++++ b/tools/cachestat.py
+@@ -88,6 +88,7 @@ elif len(argv) > 2 and tstamp == 1:
+ # load BPF program
+ bpf_text = """
+ 
++#define __ASM_ARCH_TIMER_H
+ #include <uapi/linux/ptrace.h>
+ struct key_t {
+     u64 ip;
+diff --git a/tools/cachetop.py b/tools/cachetop.py
+index aed3f49..e6e4f4a 100755
+--- a/tools/cachetop.py
++++ b/tools/cachetop.py
+@@ -141,6 +141,7 @@ def handle_loop(stdscr, args):
+     # load BPF program
+     bpf_text = """
+ 
++#define __ASM_ARCH_TIMER_H
+     #include <uapi/linux/ptrace.h>
+     struct key_t {
+         u64 ip;
+diff --git a/tools/capable.py b/tools/capable.py
+index defeab9..dda8717 100755
+--- a/tools/capable.py
++++ b/tools/capable.py
+@@ -82,6 +82,7 @@ capabilities = {
+ 
+ # define BPF program
+ bpf_text = """
++#define __ASM_ARCH_TIMER_H
+ #include <uapi/linux/ptrace.h>
+ #include <linux/sched.h>
+ 
+diff --git a/tools/cpudist.py b/tools/cpudist.py
+index 152596f..c633712 100755
+--- a/tools/cpudist.py
++++ b/tools/cpudist.py
+@@ -12,7 +12,7 @@
+ # Licensed under the Apache License, Version 2.0 (the "License")
+ 
+ from __future__ import print_function
+-from bcc import BPF, Tracepoint
++from bcc import BPF
+ from time import sleep, strftime
+ import argparse
+ 
+@@ -48,7 +48,10 @@ args = parser.parse_args()
+ countdown = int(args.count)
+ debug = 0
+ 
+-bpf_text = """#include <uapi/linux/ptrace.h>
++bpf_text = """
++#define __ASM_ARCH_TIMER_H
++#define __ASM_ARCH_TIMER_H
++#include <uapi/linux/ptrace.h>
+ #include <linux/sched.h>
+ """
+ 
+diff --git a/tools/dcsnoop.py b/tools/dcsnoop.py
+index d162a66..e5e8679 100755
+--- a/tools/dcsnoop.py
++++ b/tools/dcsnoop.py
+@@ -42,6 +42,7 @@ args = parser.parse_args()
+ 
+ # define BPF program
+ bpf_text = """
++#define __ASM_ARCH_TIMER_H
+ #include <uapi/linux/ptrace.h>
+ #include <linux/fs.h>
+ #include <linux/sched.h>
+diff --git a/tools/dcstat.py b/tools/dcstat.py
+index 26759fb..c58f1ad 100755
+--- a/tools/dcstat.py
++++ b/tools/dcstat.py
+@@ -40,6 +40,7 @@ if len(argv) > 1:
+ 
+ # define BPF program
+ bpf_text = """
++#define __ASM_ARCH_TIMER_H
+ #include <uapi/linux/ptrace.h>
+ 
+ enum stats {
+diff --git a/tools/execsnoop.py b/tools/execsnoop.py
+index 8955c0c..dfb344a 100755
+--- a/tools/execsnoop.py
++++ b/tools/execsnoop.py
+@@ -45,6 +45,7 @@ args = parser.parse_args()
+ 
+ # define BPF program
+ bpf_text = """
++#define __ASM_ARCH_TIMER_H
+ #include <uapi/linux/ptrace.h>
+ #include <linux/sched.h>
+ #include <linux/fs.h>
+diff --git a/tools/ext4dist.py b/tools/ext4dist.py
+index cd51b8a..422a492 100755
+--- a/tools/ext4dist.py
++++ b/tools/ext4dist.py
+@@ -56,6 +56,7 @@ debug = 0
+ 
+ # define BPF program
+ bpf_text = """
++#define __ASM_ARCH_TIMER_H
+ #include <uapi/linux/ptrace.h>
+ #include <linux/fs.h>
+ #include <linux/sched.h>
+diff --git a/tools/ext4slower.py b/tools/ext4slower.py
+index 20865a5..54572ed 100755
+--- a/tools/ext4slower.py
++++ b/tools/ext4slower.py
+@@ -59,6 +59,7 @@ debug = 0
+ 
+ # define BPF program
+ bpf_text = """
++#define __ASM_ARCH_TIMER_H
+ #include <uapi/linux/ptrace.h>
+ #include <linux/fs.h>
+ #include <linux/sched.h>
+diff --git a/tools/filelife.py b/tools/filelife.py
+index f73d1ee..7503186 100755
+--- a/tools/filelife.py
++++ b/tools/filelife.py
+@@ -39,6 +39,7 @@ debug = 0
+ 
+ # define BPF program
+ bpf_text = """
++#define __ASM_ARCH_TIMER_H
+ #include <uapi/linux/ptrace.h>
+ #include <linux/fs.h>
+ #include <linux/sched.h>
+diff --git a/tools/fileslower.py b/tools/fileslower.py
+index 2ae4756..53dd2f6 100755
+--- a/tools/fileslower.py
++++ b/tools/fileslower.py
+@@ -57,6 +57,7 @@ debug = 0
+ 
+ # define BPF program
+ bpf_text = """
++#define __ASM_ARCH_TIMER_H
+ #include <uapi/linux/ptrace.h>
+ #include <linux/fs.h>
+ #include <linux/sched.h>
+diff --git a/tools/filetop.py b/tools/filetop.py
+index 9f7c58d..756b362 100755
+--- a/tools/filetop.py
++++ b/tools/filetop.py
+@@ -60,6 +60,7 @@ def signal_ignore(signal, frame):
+ 
+ # define BPF program
+ bpf_text = """
++#define __ASM_ARCH_TIMER_H
+ #include <uapi/linux/ptrace.h>
+ #include <linux/blkdev.h>
+ 
+diff --git a/tools/funccount.py b/tools/funccount.py
+index 66aa011..ddfaa31 100755
+--- a/tools/funccount.py
++++ b/tools/funccount.py
+@@ -175,6 +175,7 @@ int PROBE_FUNCTION(void *ctx) {
+     return 0;
+ }
+         """
++#define __ASM_ARCH_TIMER_H
+         bpf_text = """#include <uapi/linux/ptrace.h>
+ 
+ BPF_TABLE("array", int, u64, counts, NUMLOCATIONS);
+diff --git a/tools/funclatency.py b/tools/funclatency.py
+index 13c18de..e03c36d 100755
+--- a/tools/funclatency.py
++++ b/tools/funclatency.py
+@@ -89,6 +89,7 @@ if not args.regexp:
+ 
+ # define BPF program
+ bpf_text = """
++#define __ASM_ARCH_TIMER_H
+ #include <uapi/linux/ptrace.h>
+ #include <linux/blkdev.h>
+ 
+diff --git a/tools/gethostlatency.py b/tools/gethostlatency.py
+index 73e4ad2..26d4edd 100755
+--- a/tools/gethostlatency.py
++++ b/tools/gethostlatency.py
+@@ -22,6 +22,7 @@ import ctypes as ct
+ 
+ # load BPF program
+ bpf_text = """
++#define __ASM_ARCH_TIMER_H
+ #include <uapi/linux/ptrace.h>
+ #include <linux/sched.h>
+ 
+diff --git a/tools/hardirqs.py b/tools/hardirqs.py
+index 36549c7..f70f286 100755
+--- a/tools/hardirqs.py
++++ b/tools/hardirqs.py
+@@ -51,6 +51,7 @@ debug = 0
+ 
+ # define BPF program
+ bpf_text = """
++#define __ASM_ARCH_TIMER_H
+ #include <uapi/linux/ptrace.h>
+ #include <linux/irq.h>
+ #include <linux/irqdesc.h>
+diff --git a/tools/killsnoop.py b/tools/killsnoop.py
+index 90b6f7e..2d2ed6b 100755
+--- a/tools/killsnoop.py
++++ b/tools/killsnoop.py
+@@ -37,6 +37,7 @@ debug = 0
+ 
+ # define BPF program
+ bpf_text = """
++#define __ASM_ARCH_TIMER_H
+ #include <uapi/linux/ptrace.h>
+ #include <linux/sched.h>
+ 
+diff --git a/tools/mdflush.py b/tools/mdflush.py
+index 955324a..220c794 100755
+--- a/tools/mdflush.py
++++ b/tools/mdflush.py
+@@ -18,6 +18,7 @@ import ctypes as ct
+ 
+ # load BPF program
+ b = BPF(text="""
++#define __ASM_ARCH_TIMER_H
+ #include <uapi/linux/ptrace.h>
+ #include <linux/sched.h>
+ #include <linux/genhd.h>
+diff --git a/tools/memleak.py b/tools/memleak.py
+index 04f0fea..d87b296 100755
+--- a/tools/memleak.py
++++ b/tools/memleak.py
+@@ -159,6 +159,7 @@ if command is not None:
+         pid = run_command_get_pid(command)
+ 
+ bpf_source = """
++#define __ASM_ARCH_TIMER_H
+ #include <uapi/linux/ptrace.h>
+ 
+ struct alloc_info_t {
+diff --git a/tools/mountsnoop.py b/tools/mountsnoop.py
+index a7a3973..984bb8c 100755
+--- a/tools/mountsnoop.py
++++ b/tools/mountsnoop.py
+@@ -20,6 +20,7 @@ import sys
+ 
+ 
+ bpf_text = r"""
++#define __ASM_ARCH_TIMER_H
+ #include <uapi/linux/ptrace.h>
+ #include <linux/sched.h>
+ 
+diff --git a/tools/mysqld_qslower.py b/tools/mysqld_qslower.py
+index 94906a8..3b8455c 100755
+--- a/tools/mysqld_qslower.py
++++ b/tools/mysqld_qslower.py
+@@ -39,6 +39,7 @@ QUERY_MAX = 128
+ 
+ # load BPF program
+ bpf_text = """
++#define __ASM_ARCH_TIMER_H
+ #include <uapi/linux/ptrace.h>
+ 
+ #define QUERY_MAX	""" + str(QUERY_MAX) + """
+diff --git a/tools/offcputime.py b/tools/offcputime.py
+index 1bab38b..b0e2c6e 100755
+--- a/tools/offcputime.py
++++ b/tools/offcputime.py
+@@ -100,6 +100,9 @@ def signal_ignore(signal, frame):
+ 
+ # define BPF program
+ bpf_text = """
++#define __ASM_ARCH_TIMER_H
++
++#define __ASM_ARCH_TIMER_H
+ #include <uapi/linux/ptrace.h>
+ #include <linux/sched.h>
+ 
+diff --git a/tools/offwaketime.py b/tools/offwaketime.py
+index 3b5bb36..8be9cc6 100755
+--- a/tools/offwaketime.py
++++ b/tools/offwaketime.py
+@@ -63,6 +63,7 @@ def signal_ignore(signal, frame):
+ 
+ # define BPF program
+ bpf_text = """
++#define __ASM_ARCH_TIMER_H
+ #include <uapi/linux/ptrace.h>
+ #include <linux/sched.h>
+ 
+diff --git a/tools/oomkill.py b/tools/oomkill.py
+index 75f26c5..3123314 100755
+--- a/tools/oomkill.py
++++ b/tools/oomkill.py
+@@ -23,6 +23,7 @@ loadavg = "/proc/loadavg"
+ 
+ # define BPF program
+ bpf_text = """
++#define __ASM_ARCH_TIMER_H
+ #include <uapi/linux/ptrace.h>
+ #include <linux/oom.h>
+ 
+diff --git a/tools/opensnoop.py b/tools/opensnoop.py
+index 0c2b9b5..e3e0bb5 100755
+--- a/tools/opensnoop.py
++++ b/tools/opensnoop.py
+@@ -46,6 +46,7 @@ debug = 0
+ 
+ # define BPF program
+ bpf_text = """
++#define __ASM_ARCH_TIMER_H
+ #include <uapi/linux/ptrace.h>
+ #include <uapi/linux/limits.h>
+ #include <linux/sched.h>
+diff --git a/tools/pidpersec.py b/tools/pidpersec.py
+index baf99af..1fdcc2d 100755
+--- a/tools/pidpersec.py
++++ b/tools/pidpersec.py
+@@ -19,6 +19,7 @@ from time import sleep, strftime
+ 
+ # load BPF program
+ b = BPF(text="""
++#define __ASM_ARCH_TIMER_H
+ #include <uapi/linux/ptrace.h>
+ 
+ enum stat_types {
+diff --git a/tools/profile.py b/tools/profile.py
+index 30c4d25..c433579 100755
+--- a/tools/profile.py
++++ b/tools/profile.py
+@@ -113,6 +113,7 @@ need_delimiter = args.delimited and not (args.kernel_stacks_only or
+ 
+ # define BPF program
+ bpf_text = """
++#define __ASM_ARCH_TIMER_H
+ #include <uapi/linux/ptrace.h>
+ #include <uapi/linux/bpf_perf_event.h>
+ #include <linux/sched.h>
+diff --git a/tools/runqlat.py b/tools/runqlat.py
+index bae0138..7b73c58 100755
+--- a/tools/runqlat.py
++++ b/tools/runqlat.py
+@@ -60,6 +60,7 @@ debug = 0
+ 
+ # define BPF program
+ bpf_text = """
++#define __ASM_ARCH_TIMER_H
+ #include <uapi/linux/ptrace.h>
+ #include <linux/sched.h>
+ 
+diff --git a/tools/slabratetop.py b/tools/slabratetop.py
+index af379dc..7874289 100755
+--- a/tools/slabratetop.py
++++ b/tools/slabratetop.py
+@@ -57,6 +57,7 @@ def signal_ignore(signal, frame):
+ 
+ # define BPF program
+ bpf_text = """
++#define __ASM_ARCH_TIMER_H
+ #include <uapi/linux/ptrace.h>
+ #include <linux/mm.h>
+ #include <linux/slab.h>
+diff --git a/tools/softirqs.py b/tools/softirqs.py
+index 0b2e50c..fdb926d 100755
+--- a/tools/softirqs.py
++++ b/tools/softirqs.py
+@@ -49,6 +49,7 @@ debug = 0
+ 
+ # define BPF program
+ bpf_text = """
++#define __ASM_ARCH_TIMER_H
+ #include <uapi/linux/ptrace.h>
+ 
+ typedef struct irq_key {
+diff --git a/tools/stackcount.py b/tools/stackcount.py
+index c3457a7..2e822c3 100755
+--- a/tools/stackcount.py
++++ b/tools/stackcount.py
+@@ -115,6 +115,7 @@ int trace_count(void *ctx) {
+     return 0;
+ }
+         """
++#define __ASM_ARCH_TIMER_H
+         bpf_text = """#include <uapi/linux/ptrace.h>
+ 
+ struct key_t {
+diff --git a/tools/stacksnoop.py b/tools/stacksnoop.py
+index 1eefc0a..b112966 100755
+--- a/tools/stacksnoop.py
++++ b/tools/stacksnoop.py
+@@ -50,6 +50,7 @@ debug = 0
+ 
+ # define BPF program
+ bpf_text = """
++#define __ASM_ARCH_TIMER_H
+ #include <uapi/linux/ptrace.h>
+ #include <linux/sched.h>
+ 
+diff --git a/tools/statsnoop.py b/tools/statsnoop.py
+index 38455d5..a260512 100755
+--- a/tools/statsnoop.py
++++ b/tools/statsnoop.py
+@@ -39,6 +39,7 @@ debug = 0
+ 
+ # define BPF program
+ bpf_text = """
++#define __ASM_ARCH_TIMER_H
+ #include <uapi/linux/ptrace.h>
+ #include <uapi/linux/limits.h>
+ #include <linux/sched.h>
+diff --git a/tools/tcpaccept.py b/tools/tcpaccept.py
+index 0c556a2..8693185 100755
+--- a/tools/tcpaccept.py
++++ b/tools/tcpaccept.py
+@@ -41,6 +41,7 @@ debug = 0
+ 
+ # define BPF program
+ bpf_text = """
++#define __ASM_ARCH_TIMER_H
+ #include <uapi/linux/ptrace.h>
+ #include <net/sock.h>
+ #include <bcc/proto.h>
+diff --git a/tools/tcpconnect.py b/tools/tcpconnect.py
+index 5b7f187..ef294ae 100755
+--- a/tools/tcpconnect.py
++++ b/tools/tcpconnect.py
+@@ -47,6 +47,7 @@ debug = 0
+ 
+ # define BPF program
+ bpf_text = """
++#define __ASM_ARCH_TIMER_H
+ #include <uapi/linux/ptrace.h>
+ #include <net/sock.h>
+ #include <bcc/proto.h>
+diff --git a/tools/tcpconnlat.py b/tools/tcpconnlat.py
+index 8a8377f..e3fd66f 100755
+--- a/tools/tcpconnlat.py
++++ b/tools/tcpconnlat.py
+@@ -40,6 +40,7 @@ debug = 0
+ 
+ # define BPF program
+ bpf_text = """
++#define __ASM_ARCH_TIMER_H
+ #include <uapi/linux/ptrace.h>
+ #include <net/sock.h>
+ #include <net/tcp_states.h>
+diff --git a/tools/tcplife.py b/tools/tcplife.py
+index 4bf2ca6..4dd3aae 100755
+--- a/tools/tcplife.py
++++ b/tools/tcplife.py
+@@ -62,6 +62,7 @@ debug = 0
+ 
+ # define BPF program
+ bpf_text = """
++#define __ASM_ARCH_TIMER_H
+ #include <uapi/linux/ptrace.h>
+ #define KBUILD_MODNAME "foo"
+ #include <linux/tcp.h>
+diff --git a/tools/tcpretrans.py b/tools/tcpretrans.py
+index 47857de..635dcf5 100755
+--- a/tools/tcpretrans.py
++++ b/tools/tcpretrans.py
+@@ -37,6 +37,7 @@ args = parser.parse_args()
+ 
+ # define BPF program
+ bpf_text = """
++#define __ASM_ARCH_TIMER_H
+ #include <uapi/linux/ptrace.h>
+ #include <net/sock.h>
+ #include <bcc/proto.h>
+diff --git a/tools/tcptop.py b/tools/tcptop.py
+index a6154c6..948bd97 100755
+--- a/tools/tcptop.py
++++ b/tools/tcptop.py
+@@ -65,6 +65,7 @@ loadavg = "/proc/loadavg"
+ 
+ # define BPF program
+ bpf_text = """
++#define __ASM_ARCH_TIMER_H
+ #include <uapi/linux/ptrace.h>
+ #include <net/sock.h>
+ #include <bcc/proto.h>
+diff --git a/tools/ttysnoop.py b/tools/ttysnoop.py
+index 846882c..3376e2f 100755
+--- a/tools/ttysnoop.py
++++ b/tools/ttysnoop.py
+@@ -59,6 +59,7 @@ except:
+ 
+ # define BPF program
+ bpf_text = """
++#define __ASM_ARCH_TIMER_H
+ #include <uapi/linux/ptrace.h>
+ #include <linux/fs.h>
+ 
+diff --git a/tools/vfscount.py b/tools/vfscount.py
+index f784d8e..680ec59 100755
+--- a/tools/vfscount.py
++++ b/tools/vfscount.py
+@@ -17,6 +17,7 @@ from time import sleep
+ 
+ # load BPF program
+ b = BPF(text="""
++#define __ASM_ARCH_TIMER_H
+ #include <uapi/linux/ptrace.h>
+ 
+ struct key_t {
+diff --git a/tools/vfsstat.py b/tools/vfsstat.py
+index bfcb1a0..15d7d31 100755
+--- a/tools/vfsstat.py
++++ b/tools/vfsstat.py
+@@ -38,6 +38,7 @@ if len(argv) > 1:
+ 
+ # load BPF program
+ b = BPF(text="""
++#define __ASM_ARCH_TIMER_H
+ #include <uapi/linux/ptrace.h>
+ 
+ enum stat_types {
+diff --git a/tools/wakeuptime.py b/tools/wakeuptime.py
+index ad11b9e..2cb2df9 100755
+--- a/tools/wakeuptime.py
++++ b/tools/wakeuptime.py
+@@ -59,6 +59,7 @@ def signal_ignore(signal, frame):
+ 
+ # define BPF program
+ bpf_text = """
++#define __ASM_ARCH_TIMER_H
+ #include <uapi/linux/ptrace.h>
+ #include <linux/sched.h>
+ 
+diff --git a/tools/xfsdist.py b/tools/xfsdist.py
+index 18d5a8e..94092a7 100755
+--- a/tools/xfsdist.py
++++ b/tools/xfsdist.py
+@@ -53,6 +53,7 @@ debug = 0
+ 
+ # define BPF program
+ bpf_text = """
++#define __ASM_ARCH_TIMER_H
+ #include <uapi/linux/ptrace.h>
+ #include <linux/fs.h>
+ #include <linux/sched.h>
+diff --git a/tools/xfsslower.py b/tools/xfsslower.py
+index 25c5a20..e9995e3 100755
+--- a/tools/xfsslower.py
++++ b/tools/xfsslower.py
+@@ -56,6 +56,7 @@ debug = 0
+ 
+ # define BPF program
+ bpf_text = """
++#define __ASM_ARCH_TIMER_H
+ #include <uapi/linux/ptrace.h>
+ #include <linux/fs.h>
+ #include <linux/sched.h>
+diff --git a/tools/zfsdist.py b/tools/zfsdist.py
+index 2d9ae21..b6e6cea 100755
+--- a/tools/zfsdist.py
++++ b/tools/zfsdist.py
+@@ -53,6 +53,7 @@ debug = 0
+ 
+ # define BPF program
+ bpf_text = """
++#define __ASM_ARCH_TIMER_H
+ #include <uapi/linux/ptrace.h>
+ #include <linux/fs.h>
+ #include <linux/sched.h>
+diff --git a/tools/zfsslower.py b/tools/zfsslower.py
+index e2be684..7691c3b 100755
+--- a/tools/zfsslower.py
++++ b/tools/zfsslower.py
+@@ -59,6 +59,7 @@ debug = 0
+ 
+ # define BPF program
+ bpf_text = """
++#define __ASM_ARCH_TIMER_H
+ #include <uapi/linux/ptrace.h>
+ #include <linux/fs.h>
+ #include <linux/sched.h>
