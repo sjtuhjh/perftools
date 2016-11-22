@@ -5,10 +5,14 @@
 user=root
 password="123456"
 mysql="/u01/my3306/bin/mysql"
-socket="/u01/u0/my3306/run/mysql.sock"
-ipaddr="127.0.0.1"
+port="3306"
+ipaddr="192.168.1.247"
 mysql_sys_dir="./mysql_sys"
-mysql_version="5.7"
+
+#AliSql use 5.6 version so far
+mysql_version="5.6"
+
+echo "Enable performance schema for ${mysql_version}!"
 
 if [[ $# -lt 1 ]] ; then
     echo "Usage: enable_mysql_ps.sh <enable | disable | reset> { all | specific parts}"
@@ -34,16 +38,16 @@ else
 fi
 
 enable_ps_stats() {
-${mysql} -h ${ipaddr} -u ${user} -p --socket=${socket} << EOF
+${mysql} -h ${ipaddr} -u ${user} -p -P${port} << EOF
 SOURCE ${sql_version}; 
-CALL sys.ps_setup_${1}_instrument("${2}")
-CALL sys.ps_setup_${1}_consumer("${2}")
+CALL sys.ps_setup_${1}_instrument("${2}");
+CALL sys.ps_setup_${1}_consumer("${2}");
 exit
 EOF
 }
 
 reset_ps_stats() {
-${mysql} -h ${ipaddr} -u ${user} -p --socket=${socket} << EOF
+${mysql} -h ${ipaddr} -u ${user} -p -P${port} << EOF
 CALL sys.ps_setup_reset_to_default(true) \G
 exit
 EOF
