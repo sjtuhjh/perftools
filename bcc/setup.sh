@@ -12,10 +12,10 @@ if [ "$(whoami)" == "root" ] ; then
 fi
 
 INSTALL_CMD="yum install"
-PACKAGES="subversion bison gcc gcc-c++ make cmake-3* flex git clang libedit-devel mesa-private-llvm mesa-private-llvm-devel python zlib-devel elfutils-libelf elfutils-libelf-devel lua lua-devel"
+PACKAGES="wget subversion bison gcc gcc-c++ make cmake-3* flex git clang libedit-devel mesa-private-llvm mesa-private-llvm-devel python zlib-devel elfutils-libelf elfutils-libelf-devel lua lua-devel"
 if [ "$(which apt-get 2> /dev/null)" ] ; then
     INSTALL_CMD="apt-get install"
-    PACKAGES="subversion bison build-essential cmake-3.7* flex git clang libedit-dev libllvm3.7 llvm-3.7-dev libclang-3.7-dev python zlib1g-dev libelf-dev luajit luajit-5.1-dev"
+    PACKAGES="wget subversion bison build-essential cmake-3.7* flex git clang libedit-dev libllvm3.7 llvm-3.7-dev libclang-3.7-dev python zlib1g-dev libelf-dev luajit luajit-5.1-dev"
 else
     ${SUDO_PREFIX} yum install -y "Development Tools"
 fi
