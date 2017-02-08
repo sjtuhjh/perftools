@@ -1,8 +1,64 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 9de4b70..a640f3f 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -11,6 +11,10 @@ include(cmake/GetGitRevisionDescription.cmake)
+ include(cmake/version.cmake)
+ include(GNUInstallDirs)
+ 
++if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
++  add_definitions(-D__aarch64__)
++endif()
++
+ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+ 
+ if(NOT PYTHON_ONLY)
+diff --git a/src/cc/export/helpers.h b/src/cc/export/helpers.h
+index a5afa44..4b57240 100644
+--- a/src/cc/export/helpers.h
++++ b/src/cc/export/helpers.h
+@@ -448,6 +448,16 @@ int bpf_usdt_readarg_p(int argc, struct pt_regs *ctx, void *buf, u64 len) asm("l
+ #define PT_REGS_RC(ctx)		((ctx)->ax)
+ #define PT_REGS_IP(ctx)		((ctx)->ip)
+ #define PT_REGS_SP(ctx)		((ctx)->sp)
++#elif defined(__aarch64__)
++#define PT_REGS_PARM1(ctx) ((ctx)->regs[0])
++#define PT_REGS_PARM2(ctx) ((ctx)->regs[1])
++#define PT_REGS_PARM3(ctx) ((ctx)->regs[2])
++#define PT_REGS_PARM4(ctx) ((ctx)->regs[3])
++#define PT_REGS_PARM5(ctx) ((ctx)->regs[4])
++#define PT_REGS_RET(ctx) ((ctx)->regs[30])
++#define PT_REGS_FP(ctx) ((ctx)->regs[29]) /* Works only with CONFIG_FRAME_POINTER */
++#define PT_REGS_RC(ctx) ((ctx)->regs[0])
++#define PT_REGS_SP(ctx) ((ctx)->sp)
+ #else
+ #error "bcc does not support this platform yet"
+ #endif
+diff --git a/src/cc/frontends/clang/b_frontend_action.cc b/src/cc/frontends/clang/b_frontend_action.cc
+index cc0a1fc..f5f1c18 100644
+--- a/src/cc/frontends/clang/b_frontend_action.cc
++++ b/src/cc/frontends/clang/b_frontend_action.cc
+@@ -38,9 +38,15 @@ const char *calling_conv_regs_x86[] = {
+ };
+ const char *calling_conv_regs_ppc[] = {"gpr[3]", "gpr[4]", "gpr[5]",
+                                        "gpr[6]", "gpr[7]", "gpr[8]"};
++
++const char *calling_conv_regs_aarch64[] = {"regs[0]", "regs[1]", "regs[2]",
++                                       "regs[3]", "regs[4]", "regs[5]"};
++
+ // todo: support more archs
+ #if defined(__powerpc__)
+ const char **calling_conv_regs = calling_conv_regs_ppc;
++#elif defined(__aarch64__)
++const char **calling_conv_regs = calling_conv_regs_aarch64;
+ #else
+ const char **calling_conv_regs = calling_conv_regs_x86;
+ #endif
 diff --git a/src/cc/frontends/clang/loader.cc b/src/cc/frontends/clang/loader.cc
-index 241e7ff..0549236 100644
+index 4e602e1..d2ff0db 100644
 --- a/src/cc/frontends/clang/loader.cc
 +++ b/src/cc/frontends/clang/loader.cc
-@@ -135,6 +135,9 @@ int ClangLoader::parse(unique_ptr<llvm::Module> *mod, unique_ptr<vector<TableDes
+@@ -104,6 +104,9 @@ int ClangLoader::parse(unique_ptr<llvm::Module> *mod, unique_ptr<vector<TableDes
    // 22 Jul 2016. Also see bcc #615.
    vector<const char *> flags_cstr({"-O0", "-emit-llvm", "-I", dstack.cwd(),
                                     "-Wno-deprecated-declarations",
@@ -11,9 +67,23 @@ index 241e7ff..0549236 100644
 +                                   "-Wno-tautological-compare",
                                     "-Wno-gnu-variable-sized-type-not-at-end",
                                     "-fno-color-diagnostics",
-                                    "-fno-unwind-tables",
+                                    "-x", "c", "-c", abs_file.c_str()});
+@@ -135,9 +138,12 @@ int ClangLoader::parse(unique_ptr<llvm::Module> *mod, unique_ptr<vector<TableDes
+   // set up the command line argument wrapper
+ #if defined(__powerpc64__)
+   driver::Driver drv("", "ppc64le-unknown-linux-gnu", diags);
+-#else
++#elif defined(__aarch64__)
++  driver::Driver drv("", "aarch64-unknown-linux-gnu", diags);
++#else 
+   driver::Driver drv("", "x86_64-unknown-linux-gnu", diags);
+ #endif
++  
+   drv.setTitle("bcc-clang-driver");
+   drv.setCheckInputsExist(false);
+ 
 diff --git a/src/python/bcc/__init__.py b/src/python/bcc/__init__.py
-index 08ce630..80c7641 100644
+index d13c03d..9f72362 100644
 --- a/src/python/bcc/__init__.py
 +++ b/src/python/bcc/__init__.py
 @@ -54,6 +54,8 @@ class SymbolCache(object):
@@ -26,10 +96,10 @@ index 08ce630..80c7641 100644
  
      def resolve_name(self, name):
 diff --git a/tools/argdist.py b/tools/argdist.py
-index f5422d9..7b37a7c 100755
+index 2e3aad5..62a2443 100755
 --- a/tools/argdist.py
 +++ b/tools/argdist.py
-@@ -637,6 +637,7 @@ argdist -p 2780 -z 120 \\
+@@ -631,6 +631,7 @@ argdist -p 2780 -z 120 \\
                  bpf_source = """
  struct __string_t { char s[%d]; };
  
@@ -62,7 +132,7 @@ index 46bebc4..dfa6bce 100755
  #include <linux/blkdev.h>
  
 diff --git a/tools/biosnoop.py b/tools/biosnoop.py
-index aa8a077..eb7fc5b 100755
+index bed6ded..9474180 100755
 --- a/tools/biosnoop.py
 +++ b/tools/biosnoop.py
 @@ -20,6 +20,7 @@ import re
@@ -74,7 +144,7 @@ index aa8a077..eb7fc5b 100755
  #include <linux/blkdev.h>
  
 diff --git a/tools/biotop.py b/tools/biotop.py
-index f827e62..da2ddfe 100755
+index 51ecd09..dabda45 100755
 --- a/tools/biotop.py
 +++ b/tools/biotop.py
 @@ -56,6 +56,7 @@ def signal_ignore(signal, frame):
@@ -207,7 +277,7 @@ index 26759fb..c58f1ad 100755
  
  enum stats {
 diff --git a/tools/execsnoop.py b/tools/execsnoop.py
-index 22cb54d..7e3b005 100755
+index 8955c0c..dfb344a 100755
 --- a/tools/execsnoop.py
 +++ b/tools/execsnoop.py
 @@ -45,6 +45,7 @@ args = parser.parse_args()
@@ -279,10 +349,10 @@ index 9f7c58d..756b362 100755
  #include <linux/blkdev.h>
  
 diff --git a/tools/funccount.py b/tools/funccount.py
-index 2fd683a..d12baf2 100755
+index 66aa011..ddfaa31 100755
 --- a/tools/funccount.py
 +++ b/tools/funccount.py
-@@ -176,6 +176,7 @@ int PROBE_FUNCTION(void *ctx) {
+@@ -175,6 +175,7 @@ int PROBE_FUNCTION(void *ctx) {
      return 0;
  }
          """
@@ -303,7 +373,7 @@ index 13c18de..e03c36d 100755
  #include <linux/blkdev.h>
  
 diff --git a/tools/gethostlatency.py b/tools/gethostlatency.py
-index 572eb51..a8bf014 100755
+index 73e4ad2..26d4edd 100755
 --- a/tools/gethostlatency.py
 +++ b/tools/gethostlatency.py
 @@ -22,6 +22,7 @@ import ctypes as ct
@@ -351,10 +421,10 @@ index 955324a..220c794 100755
  #include <linux/sched.h>
  #include <linux/genhd.h>
 diff --git a/tools/memleak.py b/tools/memleak.py
-index 80cef08..8becd0f 100755
+index 04f0fea..d87b296 100755
 --- a/tools/memleak.py
 +++ b/tools/memleak.py
-@@ -162,6 +162,7 @@ if command is not None:
+@@ -159,6 +159,7 @@ if command is not None:
          pid = run_command_get_pid(command)
  
  bpf_source = """
@@ -401,10 +471,10 @@ index 1bab38b..b0e2c6e 100755
  #include <linux/sched.h>
  
 diff --git a/tools/offwaketime.py b/tools/offwaketime.py
-index 40d478b..b73e168 100644
+index 3b5bb36..8be9cc6 100755
 --- a/tools/offwaketime.py
 +++ b/tools/offwaketime.py
-@@ -98,6 +98,7 @@ def signal_ignore(signal, frame):
+@@ -63,6 +63,7 @@ def signal_ignore(signal, frame):
  
  # define BPF program
  bpf_text = """
@@ -449,7 +519,7 @@ index baf99af..1fdcc2d 100755
  
  enum stat_types {
 diff --git a/tools/profile.py b/tools/profile.py
-index 1b99f43..63f7c32 100755
+index 30c4d25..c433579 100755
 --- a/tools/profile.py
 +++ b/tools/profile.py
 @@ -113,6 +113,7 @@ need_delimiter = args.delimited and not (args.kernel_stacks_only or
@@ -521,7 +591,7 @@ index 1eefc0a..b112966 100755
  #include <linux/sched.h>
  
 diff --git a/tools/statsnoop.py b/tools/statsnoop.py
-index 2fc2164..ca56053 100755
+index 38455d5..a260512 100755
 --- a/tools/statsnoop.py
 +++ b/tools/statsnoop.py
 @@ -39,6 +39,7 @@ debug = 0
@@ -569,7 +639,7 @@ index 8a8377f..e3fd66f 100755
  #include <net/sock.h>
  #include <net/tcp_states.h>
 diff --git a/tools/tcplife.py b/tools/tcplife.py
-index 1125f9c..173962d 100755
+index 4bf2ca6..4dd3aae 100755
 --- a/tools/tcplife.py
 +++ b/tools/tcplife.py
 @@ -62,6 +62,7 @@ debug = 0
