@@ -6,7 +6,7 @@ if [ "$(whoami)" == "root" ] ; then
 fi
 
 INSTALL_CMD="yum"
-if [ "$(which apt-get)" ] ; then
+if [ "$(which apt-get 2>/dev/null)" ] ; then
     INSTALL_CMD="apt-get"
 fi
 
