@@ -90,7 +90,8 @@ git clone https://github.com/iovisor/bcc.git
 
 echo "Apply ARM64 patch......"
 cd bcc
-git apply ../../patch/bcc_arm64_patch
+patch -t -p1 < ../../patch/bcc_arm64_patch
+#git apply ../../patch/bcc_arm64_patch
 cd ..
 
 mkdir build_bcc; cd build_bcc
