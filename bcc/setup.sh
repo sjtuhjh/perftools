@@ -86,36 +86,15 @@ fi
 #Build and install
 mkdir builddir
 pushd builddir > /dev/null
-git clone https://github.com/iovisor/bcc.git
-
-echo "Apply ARM64 patch......"
-cd bcc
-patch -t -p1 < ../../patch/bcc_arm64_patch
-#git apply ../../patch/bcc_arm64_patch
-cd ..
+git clone https://github.com/sjtuhjh/bcc.git
 
 mkdir build_bcc; cd build_bcc
 cmake ../bcc -DCMAKE_INSTALL_PREFIX=/usr
-make -j 32
+make -j 64
 ${SUDO_PREFIX} make install
 popd > /dev/null
 
 if [ ! -d /usr/src/kernels/$(uname -r) ] ; then
-   echo "Please install linux kernel sources under /usr/src/kernels/$(uname -r) directory firstly"
-   echo "Then re-run this setup.sh to finish setup"
-fi
-
-###############################################################################################
-# In order to compile BPF module on ARM64 platform, it is necessary to disable some asm codes
-# because llvm does not support asm codes for bpf module
-###############################################################################################
-if [ -z "$(grep '#if 0' /usr/src/kernels/$(uname -r)/arch/arm64/include/asm/sysreg.h)" ]; then
-    sed -i /#if.*__ASSEMBLY__/i#if\ 0 /usr/src/kernels/$(uname -r)/arch/arm64/include/asm/sysreg.h
-    sed -i '$a#endif' /usr/src/kernels/$(uname -r)/arch/arm64/include/asm/sysreg.h
-fi
-
-if [ -z "$(grep '#if 0' /usr/src/kernels/$(uname -r)/arch/arm64/include/asm/virt.h)" ] ; then
-    sed -i /#if.*__ASSEMBLY__/i#if\ 0 /usr/src/kernels/$(uname -r)/arch/arm64/include/asm/virt.h
-    sed -i '$a#endif' /usr/src/kernels/$(uname -r)/arch/arm64/include/asm/virt.h
+   echo "Please install linux kernel sources under /usr/src/kernels/$(uname -r) in order to use bcc tools properly"
 fi
 
