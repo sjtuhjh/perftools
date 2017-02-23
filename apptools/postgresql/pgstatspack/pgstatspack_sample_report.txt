@@ -1,0 +1,267 @@
+###########################################################################################################
+PGStatspack version 0.3 by frits.hoogland@interaccess.nl
+###########################################################################################################
+
+Snapshot information
+Begin snapshot : 
+ snapid |             ts             |     description     
+--------+----------------------------+---------------------
+    157 | 2008-08-20 16:00:01.588348 | cron based snapshot
+(1 row)
+
+End snapshot   :
+ snapid |             ts             |     description     
+--------+----------------------------+---------------------
+    158 | 2008-08-20 16:15:01.864338 | cron based snapshot
+(1 row)
+
+Seconds in snapshot:  900.275990009308
+
+
+Database version
+                                                 version                                                  
+----------------------------------------------------------------------------------------------------------
+ PostgreSQL 8.3.3 on powerpc-redhat-linux-gnu, compiled by GCC gcc (GCC) 3.4.6 20060404 (Red Hat 3.4.6-9)
+(1 row)
+
+ current_database | dbsize  
+------------------+---------
+ login_session    | 2557 MB
+(1 row)
+
+
+Database statistics
+   database    |  tps  | hitrate |  lio_ps  | pio_ps | rollbk_ps 
+---------------+-------+---------+----------+--------+-----------
+ login_session | 75.10 |   99.00 | 11420.30 |   0.35 |      0.00
+ template1     |  0.03 |   99.00 |     2.03 |   0.00 |      0.00
+ postgres      |  0.03 |   99.00 |     2.03 |   0.00 |      0.00
+ template0     |  0.00 |    0.00 |     0.00 |   0.00 |      0.00
+(4 rows)
+
+
+Top 20 tables ordered by high table to index read ratio
+     table     | table_read_pct | index_read_pct 
+---------------+----------------+----------------
+ pg_type       |              1 |              0
+ pg_index      |              0 |              0
+ pg_amop       |              0 |              0
+ pg_namespace  |              0 |              0
+ pg_proc       |              0 |              0
+ pg_attribute  |              0 |              0
+ pg_database   |              0 |              0
+ pg_am         |              0 |              0
+ pg_statistic  |              0 |              0
+ pg_class      |              0 |              0
+ pg_cast       |              0 |              0
+ pg_rewrite    |              0 |              0
+ pg_authid     |              0 |              0
+ pg_aggregate  |              0 |              0
+ pg_trigger    |              0 |              0
+ login_session |              0 |             98
+ pg_amproc     |              0 |              0
+ pg_language   |              0 |              0
+ pg_operator   |              0 |              0
+ pg_opclass    |              0 |              0
+(20 rows)
+
+
+Top 20 tables ordered by inserts
+         table         | table_inserts 
+-----------------------+---------------
+ login_session         |           131
+ pgstatspack_indexes   |            96
+ pgstatspack_tables    |            73
+ pgstatspack_settings  |            45
+ pgstatspack_database  |             4
+ pgstatspack_sequences |             1
+ pgstatspack_snap      |             1
+ pg_aggregate          |             0
+ pg_am                 |             0
+ pg_amop               |             0
+ pg_amproc             |             0
+ pg_attrdef            |             0
+ pg_attribute          |             0
+ pg_auth_members       |             0
+ pg_authid             |             0
+ pg_autovacuum         |             0
+ pg_cast               |             0
+ pg_class              |             0
+ pg_constraint         |             0
+ pg_conversion         |             0
+(20 rows)
+
+
+Top 20 tables ordered by updates
+        table         | table_updates 
+----------------------+---------------
+ pg_shdescription     |             0
+ pg_toast_2619        |             0
+ pg_ts_template       |             0
+ pg_toast_1262        |             0
+ pg_toast_11444       |             0
+ pg_toast_11454       |             0
+ pg_inherits          |             0
+ pg_class             |             0
+ pg_toast_2604        |             0
+ pg_toast_1255        |             0
+ pg_statistic         |             0
+ pgstatspack_database |             0
+ pg_opclass           |             0
+ pg_shdepend          |             0
+ sql_features         |             0
+ pg_autovacuum        |             0
+ pg_toast_2606        |             0
+ pgstatspack_settings |             0
+ login_session        |             0
+ pg_listener          |             0
+(20 rows)
+
+
+Top 20 tables ordered by deletes
+        table         | table_deletes 
+----------------------+---------------
+ login_session        |            55
+ pg_toast_2619        |             0
+ sql_features         |             0
+ pg_toast_1262        |             0
+ pg_toast_11444       |             0
+ pg_toast_11454       |             0
+ pg_inherits          |             0
+ pg_class             |             0
+ pg_toast_2604        |             0
+ pg_toast_1255        |             0
+ pg_statistic         |             0
+ pgstatspack_database |             0
+ pg_opclass           |             0
+ pg_shdepend          |             0
+ pg_ts_template       |             0
+ pg_autovacuum        |             0
+ pg_toast_2606        |             0
+ pgstatspack_settings |             0
+ pg_shdescription     |             0
+ pg_depend            |             0
+(20 rows)
+
+
+Tables ordered by percentage of tuples scanned
+     table     | rows_read_pct | tab_hitrate | idx_hitrate | tab_read | tab_hit | idx_read | idx_hit 
+---------------+---------------+-------------+-------------+----------+---------+----------+---------
+ login_session |            98 |          99 |          99 |      118 | 5894118 |      195 |  106429
+ pg_type       |             1 |          99 |          99 |        0 |  628774 |        0 |  554010
+ pg_amop       |             0 |          99 |          99 |        0 |   84184 |        0 |  144705
+ pg_namespace  |             0 |          99 |          99 |        0 |   51527 |        0 |  166922
+ pg_proc       |             0 |          99 |          99 |        0 |   42468 |        0 |  110566
+ pg_attribute  |             0 |          99 |          99 |        0 |  114889 |        0 |  242582
+ pg_database   |             0 |          99 |          99 |        0 |   12942 |        0 |   25734
+ pg_am         |             0 |          99 |           0 |        0 |   12837 |        0 |       0
+ pg_statistic  |             0 |          99 |          99 |        0 |   38141 |        0 |  114316
+ pg_class      |             0 |          99 |          99 |        0 |  115264 |        0 |  165973
+ pg_cast       |             0 |          99 |          99 |        0 |   50385 |        0 |  527909
+ pg_rewrite    |             0 |          96 |          98 |        0 |      29 |        0 |      52
+ pg_authid     |             0 |          99 |          99 |        0 |   25665 |        0 |   51295
+ pg_aggregate  |             0 |          88 |          94 |        0 |       8 |        0 |      16
+ pg_trigger    |             0 |          99 |          99 |        0 |   38511 |        0 |   51348
+ pg_amproc     |             0 |          99 |          99 |        0 |   51267 |        0 |   64104
+ pg_language   |             0 |          50 |          66 |        0 |       1 |        0 |       2
+ pg_operator   |             0 |          99 |          99 |        0 |  497702 |        0 |  116505
+ pg_opclass    |             0 |          99 |          99 |        0 |   51258 |        0 |   64095
+ pg_toast_2618 |             0 |          85 |          83 |        0 |       6 |        0 |       5
+ pg_index      |             0 |          99 |          99 |        0 |   76617 |        0 |  102268
+(21 rows)
+
+
+Indexes ordered by scans
+               index               |      table      | scans  | tup_read | tup_fetch | idx_blks_read | idx_blks_hit 
+-----------------------------------+-----------------+--------+----------+-----------+---------------+--------------
+ pg_type_oid_index                 | pg_type         | 541138 |   541138 |    541138 |             0 |       553960
+ pg_cast_source_target_index       | pg_cast         | 515216 |    50385 |     50385 |             0 |       527909
+ pg_namespace_nspname_index        | pg_namespace    | 115399 |    25645 |     25645 |             0 |       128221
+ pg_attribute_relid_attnum_index   | pg_attribute    | 114872 |   140961 |    140961 |             0 |       242582
+ pg_class_oid_index                | pg_class        |  89592 |    89592 |     89592 |             0 |       102429
+ pg_amop_fam_strat_index           | pg_amop         |  51292 |   256324 |    256324 |             0 |       115421
+ pg_amproc_fam_proc_index          | pg_amproc       |  51267 |    51267 |     51267 |             0 |        64104
+ pg_opclass_oid_index              | pg_opclass      |  51258 |    51258 |     51258 |             0 |        64095
+ pg_index_indexrelid_index         | pg_index        |  51258 |    51258 |     51258 |             0 |        64095
+ pg_statistic_relid_att_index      | pg_statistic    |  50747 |    38141 |     38141 |             0 |       114316
+ pg_trigger_tgrelid_tgname_index   | pg_trigger      |  38511 |    38511 |     38511 |             0 |        51348
+ pg_proc_oid_index                 | pg_proc         |  29652 |    29652 |     29652 |             0 |        72127
+ pg_operator_oprname_l_r_n_index   | pg_operator     |  28984 |   732512 |    732512 |             0 |        70783
+ pg_namespace_oid_index            | pg_namespace    |  25879 |    25879 |     25879 |             0 |        38701
+ pg_class_relname_nsp_index        | pg_class        |  25361 |    25354 |     25354 |             0 |        63544
+ pg_index_indrelid_index           | pg_index        |  25351 |    63501 |     63501 |             0 |        38173
+ pg_amop_opr_fam_index             | pg_amop         |  16462 |    32892 |     32892 |             0 |        29284
+ pg_operator_oid_index             | pg_operator     |  16450 |    16450 |     16450 |             0 |        45722
+ pg_database_oid_index             | pg_database     |  12867 |    12867 |     12867 |             0 |        25734
+ pg_authid_oid_index               | pg_authid       |  12829 |    12829 |     12829 |             0 |        25651
+ pg_authid_rolname_index           | pg_authid       |  12822 |    12822 |     12822 |             0 |        25644
+ pg_proc_proname_args_nsp_index    | pg_proc         |  12816 |    12823 |     12823 |             0 |        38439
+ login_session_pkey                | login_session   |  12563 |    12547 |     12546 |           170 |        63563
+ login_session_account_id_idx      | login_session   |   3910 |  9667846 |         0 |            25 |        42342
+ pg_autovacuum_vacrelid_index      | pg_autovacuum   |   1095 |        0 |         0 |             0 |         1095
+ pg_rewrite_rel_rulename_index     | pg_rewrite      |     29 |       31 |        31 |             0 |           52
+ pg_type_typname_nsp_index         | pg_type         |     21 |        3 |         3 |             0 |           50
+ pg_aggregate_fnoid_index          | pg_aggregate    |      8 |        8 |         8 |             0 |           16
+ pg_auth_members_member_role_index | pg_auth_members |      7 |        0 |         0 |             0 |            7
+ pg_toast_2618_index               | pg_toast_2618   |      4 |       12 |        12 |             0 |            5
+ pg_language_oid_index             | pg_language     |      1 |        1 |         1 |             0 |            2
+ login_session_connect_time_idx    | login_session   |      0 |        0 |         0 |             0 |          524
+(32 rows)
+
+
+Sequences ordered by blks_read
+ schema | name | blks_read | blks_hit 
+--------+------+-----------+----------
+(0 rows)
+
+
+Parameters
+            name            |                              start_setting                               |                               stop_setting                               |        source        
+----------------------------+--------------------------------------------------------------------------+--------------------------------------------------------------------------+----------------------
+ archive_command            | cp -i %p /var/lib/pgwalarchives/%f </dev/null                            | cp -i %p /var/lib/pgwalarchives/%f </dev/null                            | configuration file
+ archive_mode               | on                                                                       | on                                                                       | configuration file
+ archive_timeout            | 60                                                                       | 60                                                                       | configuration file
+ checkpoint_segments        | 32                                                                       | 32                                                                       | configuration file
+ config_file                | /var/lib/pgsql/data/postgresql.conf                                      | /var/lib/pgsql/data/postgresql.conf                                      | override
+ data_directory             | /var/lib/pgsql/data                                                      | /var/lib/pgsql/data                                                      | override
+ DateStyle                  | ISO, MDY                                                                 | ISO, MDY                                                                 | configuration file
+ default_statistics_target  | 100                                                                      | 100                                                                      | configuration file
+ default_text_search_config | pg_catalog.english                                                       | pg_catalog.english                                                       | configuration file
+ effective_cache_size       | 2621440                                                                  | 2621440                                                                  | configuration file
+ hba_file                   | /var/lib/pgsql/data/pg_hba.conf                                          | /var/lib/pgsql/data/pg_hba.conf                                          | override
+ ident_file                 | /var/lib/pgsql/data/pg_ident.conf                                        | /var/lib/pgsql/data/pg_ident.conf                                        | override
+ lc_collate                 | C                                                                        | C                                                                        | override
+ lc_ctype                   | C                                                                        | C                                                                        | override
+ lc_messages                | en_US                                                                    | en_US                                                                    | configuration file
+ lc_monetary                | en_US                                                                    | en_US                                                                    | configuration file
+ lc_numeric                 | en_US                                                                    | en_US                                                                    | configuration file
+ lc_time                    | en_US                                                                    | en_US                                                                    | configuration file
+ listen_addresses           | *                                                                        | *                                                                        | configuration file
+ log_destination            | stderr                                                                   | stderr                                                                   | configuration file
+ log_directory              | pg_log                                                                   | pg_log                                                                   | configuration file
+ log_filename               | postgresql-%a.log                                                        | postgresql-%a.log                                                        | configuration file
+ log_line_prefix            | %t <%u:%d:%r>                                                            | %t <%u:%d:%r>                                                            | configuration file
+ log_rotation_age           | 1440                                                                     | 1440                                                                     | configuration file
+ log_rotation_size          | 0                                                                        | 0                                                                        | configuration file
+ log_timezone               | US/Eastern                                                               | US/Eastern                                                               | command line
+ log_truncate_on_rotation   | on                                                                       | on                                                                       | configuration file
+ logging_collector          | on                                                                       | on                                                                       | configuration file
+ maintenance_work_mem       | 65536                                                                    | 65536                                                                    | configuration file
+ max_connections            | 110                                                                      | 110                                                                      | configuration file
+ max_fsm_pages              | 240000                                                                   | 240000                                                                   | configuration file
+ max_fsm_relations          | 3000                                                                     | 3000                                                                     | configuration file
+ max_stack_depth            | 2048                                                                     | 2048                                                                     | environment variable
+ port                       | 5432                                                                     | 5432                                                                     | command line
+ random_page_cost           | 2                                                                        | 2                                                                        | configuration file
+ search_path                | $user,public,drupal,services,phpbb,tiki,cmsportal,durendal,login_session | $user,public,drupal,services,phpbb,tiki,cmsportal,durendal,login_session | configuration file
+ server_encoding            | UTF8                                                                     | UTF8                                                                     | override
+ shared_buffers             | 131072                                                                   | 131072                                                                   | configuration file
+ temp_buffers               | 4096                                                                     | 4096                                                                     | configuration file
+ TimeZone                   | US/Eastern                                                               | US/Eastern                                                               | command line
+ timezone_abbreviations     | Default                                                                  | Default                                                                  | command line
+ transaction_isolation      | read committed                                                           | read committed                                                           | override
+ transaction_read_only      | off                                                                      | off                                                                      | override
+ wal_buffers                | 128                                                                      | 128                                                                      | configuration file
+ work_mem                   | 2048                                                                     | 2048                                                                     | configuration file
+(45 rows)
+

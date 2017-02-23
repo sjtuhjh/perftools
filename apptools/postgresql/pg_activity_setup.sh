@@ -5,7 +5,7 @@ if [ -f "./pg_activity/pg_activity" ] ; then
     exit 0
 fi
 
-sudo yum install python-psycopg2
+sudo yum install -y python-psycopg2
 
 git clone https://github.com/julmon/pg_activity.git
 pushd pg_activity > /dev/null

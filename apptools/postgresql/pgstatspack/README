@@ -1,0 +1,102 @@
+The postgresql statspack.
+frits.hoogland@interaccess.nl (not involved anymore)
+kpierno@lulu.com (not involved anymore)
+uwe.bartels@gmail.com
+
+This version is strongly inspired by Glen Fawcetts version (and oracle's statspack obviously).
+Some fields have been chopped off Glen's version, in order to be able to run this on a 8.1 version database.
+
+This is work in progress, so feel free to add features or corrections. 
+Please post questions, additions or suggestions to uwe.bartels@gmail.com.
+
+For sample cron entries see Automated Snapshots section at the bottom of this file.
+
+Upgrade (All existing users should upgrade as there have been changes to the stored functions):
+
+1. Delete files from old install new version has a cleaned up file layout
+2. Untar contents to new install location
+3. Run the upgrade_pgstatspack.sh as the postgres OS user
+4. Check output for errors
+5. Create a cron job to call the snapshot.sh for automated snapshot creation recommended every 15 minutes
+6. Create a daily cron job to delete old snapshots
+
+Installation: (Run all scripts as the postgres OS user)
+
+1. Create or use a postgresql user which has superuser privilege
+2. Run the install_pgstats.sh this will install the script on all databases except the postgres db and templates 
+3. Check the output for errors
+4. Create a cron job to call the snapshot.sh for automated snapshot creation recommended every 15 minutes
+5. Create a daily cron job to delete old snapshots
+
+Reinstalling:
+
+->The scripts will drop database objects prior to creating them. Already existent data will be DELETED!
+
+1. Use the existing postgresql superuser and schema.
+2. -If needed- backup existing data using pg_dump -U <user> -t 'pgstatspack*' -f pgstatspack_dump.sql <database>
+3. Run the remove_statspack.sh
+4. Run the install_pgstats.sh script
+5. Create a cron job to call the snapshot.sh for automated snapshot creation recommended every 15 minutes
+6. Create a daily cron job to delete old snapshots
+
+
+pgstatspack is now ready.
+
+Create snapshot:
+
+There are several methods to creating snapshots within the database.
+
+Manually create a snapshot
+
+  Use the same user which is the owner of the function and the tables.
+
+  Snapshot without comment:
+
+    select pgstatspack_snap('');
+
+  Snapshot with comment:
+ 
+    select pgstatspack_snap('my comment');
+
+Automated snapshots
+
+  Create a cron job for the postgres OS user I suggest every 15 minutes
+
+    */15 * * * *    /somepath/pgstatspack/bin/snapshot.sh 1> /some_path/log_file 2>&1
+
+  Don't forget to purge old snapshots I suggest keeping about 30 days this will run at 0302
+
+    2 3 * * *       /somepath/pgstatspack/bin/delete_snapshot.sh 1> /some_path/log_file 2>&1
+
+Create a report:
+
+Reporting is done using the pgstatspack_report.sh shellscript.
+
+If the database username and database name are the same as your current operating system username:
+
+./pgstatspack_report.sh
+
+If the database username and/or the database name are different, execute pgstatspack_report.sh the following way:
+
+./pgstatspack_report.sh <username> <database>
+
+Next, the script displays all the snapshosts available, and asks for a begin snapshot and an end snapshot.
+
+
+New Features / changes in 2.2
+- add table size and index size statistics
+- add primary keys (for better performance)
+- add support for contrib module pg_stat_statements (from 8.4)
+- add internal pgstatspack version information
+- add reverse snapid order in pgstatspack_report.sh snapid choice
+
+New Features / changes in 2.3
+- add statistics for pg_stat_user_functions (from 8.4)
+- add statistics for pg_stat_bgwriter (from 8.4)
+- rewrite of pg_stat_statements support
+- normalization of many tables for saving space
+- enhance installation process
+
+New Features / changes in 2.3.1
+- bugfixing snapshot function which did not retrieve all tables
+
