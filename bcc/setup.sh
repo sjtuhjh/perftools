@@ -98,3 +98,8 @@ if [ ! -d /usr/src/kernels/$(uname -r) ] ; then
    echo "Please install linux kernel sources under /usr/src/kernels/$(uname -r) in order to use bcc tools properly"
 fi
 
+if [ -z "$(grep '/usr/share/bcc/tools' /etc/profile 2>/dev/null)" ] ; then
+    echo 'PATH=/usr/share/bcc/tools:$PATH' >> /etc/profile
+    source /etc/profile
+fi
+
