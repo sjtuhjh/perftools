@@ -4,35 +4,16 @@
 
 #Possible is Ubuntu, CentOS, OpenSue
 
-if [ $# -lt 1 ] ; then
-    echo "Usage: estuary_build_kernel.sh <DISTROS> <PLATFORM> <Source Tag>"
-    exit 0
-fi
-
-if [ ! -d "/lib/modules/$(uname -r)" ] ; then
-    echo "The /lib/modules/$(uname -r)/ does not exist"
-    echo "Please install kernel modules firstly"
-    exit 0
-fi
-
-DISTROS=$1
-PLATFORM="d03"
-if [ $# -gt 1 ] ; then
-    PLATFORM=${2}
-fi
-
+DISTROS="CentOS"
+PLATFORM="d05"
 TAG_VERSION="master"
-if [ $# -gt 2 ] ; then
-    TAG_VERSIOiN="${3}"
-fi
-
 ADD_SUDO_PREFIX="sudo"
 if [ "$(whoami)" == "root" ] ; then
     ADD_SUDO_PREFIX=""
 fi
 
 INSTALL_CMD="yum"
-if [ "$(which apt-get)" ] ; then
+if [ "$(which apt-get 2>/dev/null)" ] ; then
     INSTALL_CMD="apt-get"
 fi
 
@@ -57,14 +38,4 @@ fi
 cp -f ~/open-estuary/.repo/repo/repo ~/bin/repo
 
 false; while [ $? -ne 0 ]; do repo sync; done
-
-#${ADD_SUDO_PREFIX} ./estuary/build.sh --builddir=${BUILD_DIR} --platform=${PLATFORM} --distro=${DISTRIOS}
-
-#Update Kernel Source links
-#${ADD_SUDO_PREFIX} rm -r /lib/modules/$(uname -r)/build
-#${ADD_SUDO_PREFIX} rm -r /lib/modules/$(uname -r)/source
-
-#${ADD_SUDO_PREFIX} ln -s /usr/src/kernels/$(uname -r) /lib/modules/$(uname -r)/build 
-#${ADD_SUDO_PREFIX} ln -s /usr/src/kernels/$(uname -r) /lib/modules/$(uname -r)/source
-
 
