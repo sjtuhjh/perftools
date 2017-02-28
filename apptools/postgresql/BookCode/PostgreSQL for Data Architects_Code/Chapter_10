@@ -1,0 +1,165 @@
+#   Master -
+# postgresql.conf
+port = 2345
+wal_level = hot_standby
+archive_mode = on
+archive_command = 'rsync -av %p /pgdata/archive/'
+archive_timeout = 10
+max_wal_senders = 2
+wal_keep_segments = 10
+
+# 
+host replication postgres 127.0.0.1/32 trust
+
+#
+mkdir /pgdata/archive
+
+
+
+initdb --pgdata=/pgdata/standby
+
+# Secondary
+vim /pgdata/standby/postgresql.conf
+listen_addresses = '127.0.0.1'
+hot_standby = on
+
+vim /pgdata/standby/recovery.conf
+
+standby_mode = 'on'
+primary_conninfo = 'host=127.0.0.1 port=2345 user=postgres'
+restore_command = 'cp /pgdata/archive/%f "%p"'
+trigger_file = '/pgdata/standby/down.trg'
+
+
+SELECT pg_start_backup('mybackup');
+
+rsync -avz --exclude postmaster.pid --exclude pg_hba.conf \
+--exclude postgresql.conf --exclude postmaster.opts \
+--exclude pg_xlog /pgdata/9.3/ /pgdata/standby
+
+SELECT pg_stop_backup();
+pg_ctl start
+CREATE TABLE a(id int);
+SHOW transaction_read_only;
+
+
+wget -O pgpool-II-3.3.3.tar.gz \
+http://www.pgpool.net/download.php?f=pgpool-II-3.3.3.tar.gz && \
+tar -xzvf pgpool-II-3.3.3.tar.gz
+
+cd pgpool-II-3.3.3 && ./configure && make && sudo make install
+
+cd sql/pgpool-recovery
+make && sudo make install
+
+CREATE EXTENSION pgpool_recovery;
+
+CREATE USER pgpooluser WITH PASSWORD 'pgpool';
+
+# As root
+cd /usr/local/etc
+cp pgpool.conf.sample-stream pgpool.conf
+cp pool_hba.conf.sample pool_hba.conf
+vim pgpool.conf
+
+listen_addresses = '127.0.0.1'
+backend_hostname0 = '127.0.0.1'
+backend_port0 = 2345
+backend_weight0 = 0
+backend_data_directory0 = '/pgdata/9.3'
+
+backend_hostname1 = '127.0.0.1'
+backend_port1 = 5432
+backend_weight1 = 1
+backend_data_directory1 = '/pgdata/standby'
+backend_flag1 = 'DISALLOW_TO_FAILOVER'
+
+num_init_children = 8
+log_statement = on
+log_per_node_statement = on
+sr_check_user = 'pgpooluser'
+sr_check_password = 'pgpool'
+
+health_check_period = 10
+health_check_user = 'pgpooluser'
+health_check_password = 'pgpool'
+failover_command = '/usr/local/pgsql/failover.sh %d /pgdata/standby/down.trg'
+
+vim /usr/local/pgsql/failover.sh
+
+#! /bin/sh
+# Arguments: $1: failed node id. $2: trigger file
+failed_node=$1
+trigger_file=$2
+# Do nothing if standby goes down.
+if [ $failed_node = 1 ];
+then exit 0;
+fi
+# Create the trigger file.
+/bin/touch $trigger_file
+exit 0;
+
+
+chmod +x /usr/local/pgsql/failover.sh
+
+mkdir -p /var/run/pgpool
+
+
+pgpool -n > /tmp/pgpool.log 2>&1 &
+
+psql -p 9999
+CREATE DATABASE pgp;
+SHOW pool_nodes;
+SHOW pool_processes;
+\c pgp
+CREATE TABLE tbl(id INT);
+SELECT * FROM tbl;
+INSERT INTO tbl VALUES(1);
+SELECT * FROM tbl;
+DELETE FROM tbl;
+SELECT * FROM tbl;
+# On primary
+pg_ctl stop
+psql -p 9999
+\c pgp
+SHOW port;
+INSERT INTO tbl values(100);
+SHOW transaction_read_only;
+
+cd /pgdata/standby
+ls rec*
+
+# Stop secondary and start primary node before proceeding.
+cd /pgdata/standby
+rm -rf *
+pg_basebackup -D /pgdata/standby --format=plain \
+--write-recovery-conf --xlog-method=fetch --verbose -h 127.0.0.1
+vim postgresql.conf
+port = 5432
+hot_standby = on
+archive_command = 'rsync -av %p /pgdata/standby_archive/%f '
+
+vim recovery.conf
+standby_mode = 'on'
+primary_conninfo = 'user=postgres host=127.0.0.1 port=2345 sslmode=disable sslcompression=1'
+pause_at_recovery_target = true
+recovery_target_name = patch_of_2014_07_02
+
+
+# primary 
+psql -d pgp
+CREATE TABLE myt(id integer);
+INSERT INTO myt SELECT generate_series(1,100);
+SELECT pg_create_restore_point('patch_of_2014_07_02');
+INSERT INTO myt SELECT generate_series(1000,1100);
+SELECT count(*), min(id), max(id) FROM myt;
+
+# secondary
+pg_ctl start
+
+\c pgp
+SELECT min(id), max(id), count(*) FROM myt;
+CREATE TABLE a(id integer);
+SELECT pg_xlog_replay_resume();
+CREATE TABLE a(id integer);
+SELECT min(id), max(id), count(*) FROM myt;

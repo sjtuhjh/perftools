@@ -1,0 +1,93 @@
+psql
+CREATE USER bank PASSWORD 'bank';
+ALTER USER bank WITH createdb;
+\c test bank
+CREATE DATABASE accounts;
+\c accounts;
+CREATE TABLE account (id serial PRIMARY KEY ,  
+first_name varchar(100), last_name varchar(100), account_bal  
+numeric (10,2));
+SHOW default_transaction_isolation;
+SELECT txid_current();
+BEGIN;
+SELECT txid_current();
+SELECT now();
+SELECT clock_timestamp();
+SELECT txid_current();
+SELECT now();
+SELECT clock_timestamp();
+SELECT txid_current();
+COMMIT;
+SELECT txid_current();
+BEGIN;
+SHOW transaction_isolation;
+SET transaction isolation level repeatable read;
+SHOW transaction_isolation;
+COMMIT;
+SHOW transaction_isolation;
+DELETE FROM  account;
+INSERT INTO account (first_name,last_name, account_bal)  
+values ( 'Jane', 'Adam', 1000);
+
+SET default_transaction_isolation = 'repeatable read';
+BEGIN;
+SELECT * FROM account;
+
+        -- Session 2
+     SET default_transaction_isolation = 'repeatable read';
+     BEGIN;
+     SELECT * FROM account;
+     UPDATE account 
+     SET account_bal = 2000
+     WHERE id = 2;
+     COMMIT;
+UPDATE account
+SET account_bal = 2000
+WHERE id = 2;
+ROLLBACK;
+
+
+SET default_transaction_isolation = 'serializable';
+BEGIN;
+SELECT first_name,  
+sum(account_bal) FROM account  
+GROUP BY first_name;
+INSERT INTO account  
+(first_name,last_name,account_bal)
+values ('Jane','Doe',100);
+        -- Session 2
+        SET default_transaction_isolation = 'serializable';
+        BEGIN;
+        SELECT first_name,  
+        sum(account_bal) FROM
+        account GROUP BY  
+        first_name;
+        INSERT INTO account  
+        (first_name,last_name,
+        account_bal) values  
+        ('John','Doe',100);
+        COMMIT;
+SELECT first_name,  
+sum(account_bal) FROM account  
+GROUP BY first_name;
+COMMIT;        
+
+BEGIN;
+CREATE TABLE emp(id integer, first_name varchar,  
+last_name varchar);
+INSERT INTO emp(first_name, last_name) VALUES  
+('SCOTT','TIGER');
+SELECT xmin,xmax, *  FROM emp;
+SELECT txid_current();
+COMMIT;
+
+BEGIN;
+SELECT txid_current();
+UPDATE emp SET last_name = 'TGR';
+SELECT xmin, xmax, * FROM emp;
+        -- Session 2
+        SELECT xmin,xmax, *  FROM emp;
+COMMIT;
+SELECT xmin,xmax, *  FROM emp;
+        -- Session 2
+        SELECT xmin,xmax, *  FROM emp;

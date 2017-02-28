@@ -1,0 +1,275 @@
+RECIPE: Securing database objects
+
+REVOKE ALL on testusers from nchhabra;
+
+REVOKE insert,update,delete,truncate on testusers from agovil;
+
+
+
+
+RECIPE: Controlling access via fi rewalls
+
+-A INPUT -m state --state NEW -m tcp -p tcp --dport 5432 -j ACCEPT
+
+service iptables restart
+
+
+
+
+RECIPE: Controlling access via confi guration fi les
+
+hrdb=# \z
+
+
+
+
+RECIPE: Testing remote connectivity
+
+D:\Postgresql_Project\bin>psql -h 192.168.12.10 hrdb agovil
+
+
+
+
+RECIPE: Auditing database changes
+
+CREATE SCHEMA logging;
+
+CREATE TABLE logging.t_history (
+  id serial,
+  tstamp timestamp DEFAULT now(),
+  schemaname text,
+  tabname text,
+  operation text,
+  who text DEFAULT current_user,
+  new_val json,
+  old_val json
+);
+
+
+CREATE FUNCTION change_trigger()
+RETURNS trigger AS $$
+BEGIN 
+  IF TG_OP = 'INSERT' THEN 
+    INSERT INTO logging.t_history (
+      tabname,
+      schemaname,
+      operation,
+      new_val
+    )
+    VALUES (
+      TG_RELNAME,
+      TG_TABLE_SCHEMA,
+      TG_OP,
+      row_to_json(NEW)
+    ); 
+  RETURN NEW; 
+  ELSIF TG_OP = 'UPDATE' THEN 
+    INSERT INTO logging.t_history (
+      tabname,
+      schemaname,
+      operation,
+      new_val,
+      old_val
+    )
+    VALUES (
+      TG_RELNAME,
+      TG_TABLE_SCHEMA,
+      TG_OP,
+      row_to_json(NEW),
+      row_to_json(OLD)
+    ); 
+  RETURN NEW; 
+  ELSIF TG_OP = 'DELETE' THEN 
+    INSERT INTO logging.t_history (
+      tabname,
+      schemaname,
+      operation,
+      old_val
+    )
+    VALUES (
+      TG_RELNAME,
+      TG_TABLE_SCHEMA,
+      TG_OP,
+      row_to_json(OLD)
+    );
+  RETURN OLD;
+  END IF;
+END;
+$$ LANGUAGE 'plpgsql' SECURITY DEFINER;
+
+CREATE TABLE t_trig (id int,name text);
+
+CREATE TRIGGER t BEFORE INSERT OR UPDATE OR DELETE ON t_trig FOR EACH ROW EXECUTE PROCEDURE change_trigger();
+
+INSERT INTO t_trig VALUES (1, 'hans');
+UPDATE t_trig SET id = 10 * id, name ='paul';
+
+SELECT tabname, operation, old_val, new_val FROM logging.t_history;
+
+pg_ctl -D /var/lib/pgsql/data reload
+
+
+
+
+RECIPE: Enabling SSL in PostgreSQL
+
+C:\cygwin\OpenSSL-Win32\bin>openssl req -x509 -in server.req -text -key server.key -out server.crt
+
+
+
+
+RECIPE: Testing SSL encryption
+
+psql -h 10.168.192.16 hrdb postgres
+
+
+
+
+RECIPE: Encrypting confi dential data
+
+testdb1=# create extension pgcrypto;
+testdb1=# create table demo(pw bytea);
+testdb1=# insert into demo(pw) values ( encrypt( 'champion', 'key', 'aes') );
+testdb1=# select * from demo;
+
+testdb1=# select decrypt(pw, 'key', 'aes') FROM demo;
+
+testdb1=# select convert_from(decrypt(pw, 'key', 'aes'), 'utf-8') FROM demo;
+
+CREATE TABLE testuserscards(
+  card_id SERIAL PRIMARY KEY,
+  username varchar(100),
+  cc bytea
+);
+
+INSERT INTO testuserscards(username, cc)
+SELECT robotccs.username, pgp_pub_encrypt(robotccs.cc, keys.pubkey) As cc
+FROM (VALUES ('robby', '41111111111111111'),
+    ('artoo', '41111111111111112') ) As robotccs(username, cc)
+     CROSS JOIN (SELECT dearmor('
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+Version: GnuPG v1.4.1 (GNU/Linux)
+
+mQGiBELIIgoRBAC1onBpxKYgDvrgCaUWPY34947X3ogxGOfCN0p6Eqrx+2PUhm4n
+vFvmczpMT4iDc0mUO+iwnwsEkXQI1eC99g8c0jnZAvzJZ5miAHL8hukMAMfDkYke
+5aVvcPPc8uPDlItpszGmH0rM0V9TIt/i9QEXetpyNWhk4jj5qnohYhLeZwCgkOdO
+RFAdNi4vfFPivvtAp2ffjU8D/R3x/UJCvkzi7i9rQHGo313xxmQu5BuqIjANBUij
+8IE7LRPI/Qhg2hYy3sTJwImDi7VkS+fuvNVk0d6MTWplAXYU96bn12JaD21R9sKl
+Fzcc+0iZI1wYA1PczisUkoTISE+dQFUsoGHfpDLhoBuesXQrhBavI8t8VPd+nkdt
+J+oKA/9iRQ87FzxdYTkh2drrv69FZHc3Frsjw9nPcBq/voAvXH0MRilqyCg7HpW/
+T9naeOERksa+Rj4R57IF1l4e5oiiGJo9QmaKZcsCsXrREJCycrlEtMqXfSPy+bi5
+0yDZE/Qm1dwu13+OXOsRvkoNYjO8Mzo9K8wU12hMqN0a2bu6a7QjRWxnYW1hbCAy
+MDQ4IDx0ZXN0MjA0OEBleGFtcGxlLm9yZz6IXgQTEQIAHgUCQsgiCgIbAwYLCQgH
+AwIDFQIDAxYCAQIeAQIXgAAKCRBI6c1W/qZo29PDAKCG724enIxRog1j+aeCp/uq
+or6mbwCePuKy2/1kD1FvnhkZ/R5fpm+pdm25Ag0EQsgiIhAIAJI3Gb2Ehtz1taQ9
+AhPY4Avad2BsqD3S5X/R11Cm0KBE/04D29dxn3f8QfxDsexYvNIZjoJPBqqZ7iMX
+MhoWyw8ZF5Zs1mLIjFGVorePrm94N3MNPWM7x9M36bHUjx0vCZKFIhcGY1g+htE/
+QweaJzNVeA5z4qZmik41FbQyQSyHa3bOkTZu++/U6ghP+iDp5UDBjMTkVyqITUVN
+gC+MR+da/I60irBVhue7younh4ovF+CrVDQJC06HZl6CAJJyA81SmRfi+dmKbbjZ
+LF6rhz0norPjISJvkIqvdtM4VPBKI5wpgwCzpEqjuiKrAVujRT68zvBvJ4aVqb11
+k5QdJscAAwUH/jVJh0HbWAoiFTe+NvohfrA8vPcD0rtU3Y+siiqrabotnxJd2NuC
+bxghJYGfNtnx0KDjFbCRKJVeTFok4UnuVYhXdH/c6i0/rCTNdeW2D6pmR4GfBozR
+Pw/ARf+jONawGLyUj7uq13iquwMSE7VyNuF3ycL2OxXjgOWMjkH8c+zfHHpjaZ0R
+QsetMq/iNBWraayKZnWUd+eQqNzE+NUo7w1jAu7oDpy+8a1eipxzK+O0HfU5LTiF
+Z1Oe4Um0P2l3Xtx8nEgj4vSeoEkl2qunfGW00ZMMTCWabg0ZgxPzMfMeIcm6525A
+Yn2qL+X/qBJTInAl7/hgPz2D1Yd7d5/RdWaISQQYEQIACQUCQsgiIgIbDAAKCRBI
+6c1W/qZo25ZSAJ98WTrtl2HiX8ZqZq95v1+9cHtZPQCfZDoWQPybkNescLmXC7q5
+1kNTmEU=
+=8QM5
+-----END PGP PUBLIC KEY BLOCK-----
+') As pubkey) As keys;
+
+SELECT username, cc FROM testuserscards;
+
+SELECT pgp_key_id(dearmor('
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+Version: GnuPG v1.4.1 (GNU/Linux)
+
+mQGiBELIIgoRBAC1onBpxKYgDvrgCaUWPY34947X3ogxGOfCN0p6Eqrx+2PUhm4n
+vFvmczpMT4iDc0mUO+iwnwsEkXQI1eC99g8c0jnZAvzJZ5miAHL8hukMAMfDkYke
+5aVvcPPc8uPDlItpszGmH0rM0V9TIt/i9QEXetpyNWhk4jj5qnohYhLeZwCgkOdO
+RFAdNi4vfFPivvtAp2ffjU8D/R3x/UJCvkzi7i9rQHGo313xxmQu5BuqIjANBUij
+8IE7LRPI/Qhg2hYy3sTJwImDi7VkS+fuvNVk0d6MTWplAXYU96bn12JaD21R9sKl
+Fzcc+0iZI1wYA1PczisUkoTISE+dQFUsoGHfpDLhoBuesXQrhBavI8t8VPd+nkdt
+J+oKA/9iRQ87FzxdYTkh2drrv69FZHc3Frsjw9nPcBq/voAvXH0MRilqyCg7HpW/
+T9naeOERksa+Rj4R57IF1l4e5oiiGJo9QmaKZcsCsXrREJCycrlEtMqXfSPy+bi5
+0yDZE/Qm1dwu13+OXOsRvkoNYjO8Mzo9K8wU12hMqN0a2bu6a7QjRWxnYW1hbCAy
+MDQ4IDx0ZXN0MjA0OEBleGFtcGxlLm9yZz6IXgQTEQIAHgUCQsgiCgIbAwYLCQgH
+AwIDFQIDAxYCAQIeAQIXgAAKCRBI6c1W/qZo29PDAKCG724enIxRog1j+aeCp/uq
+or6mbwCePuKy2/1kD1FvnhkZ/R5fpm+pdm25Ag0EQsgiIhAIAJI3Gb2Ehtz1taQ9
+AhPY4Avad2BsqD3S5X/R11Cm0KBE/04D29dxn3f8QfxDsexYvNIZjoJPBqqZ7iMX
+MhoWyw8ZF5Zs1mLIjFGVorePrm94N3MNPWM7x9M36bHUjx0vCZKFIhcGY1g+htE/
+QweaJzNVeA5z4qZmik41FbQyQSyHa3bOkTZu++/U6ghP+iDp5UDBjMTkVyqITUVN
+gC+MR+da/I60irBVhue7younh4ovF+CrVDQJC06HZl6CAJJyA81SmRfi+dmKbbjZ
+LF6rhz0norPjISJvkIqvdtM4VPBKI5wpgwCzpEqjuiKrAVujRT68zvBvJ4aVqb11
+k5QdJscAAwUH/jVJh0HbWAoiFTe+NvohfrA8vPcD0rtU3Y+siiqrabotnxJd2NuC
+bxghJYGfNtnx0KDjFbCRKJVeTFok4UnuVYhXdH/c6i0/rCTNdeW2D6pmR4GfBozR
+Pw/ARf+jONawGLyUj7uq13iquwMSE7VyNuF3ycL2OxXjgOWMjkH8c+zfHHpjaZ0R
+QsetMq/iNBWraayKZnWUd+eQqNzE+NUo7w1jAu7oDpy+8a1eipxzK+O0HfU5LTiF
+Z1Oe4Um0P2l3Xtx8nEgj4vSeoEkl2qunfGW00ZMMTCWabg0ZgxPzMfMeIcm6525A
+Yn2qL+X/qBJTInAl7/hgPz2D1Yd7d5/RdWaISQQYEQIACQUCQsgiIgIbDAAKCRBI
+6c1W/qZo25ZSAJ98WTrtl2HiX8ZqZq95v1+9cHtZPQCfZDoWQPybkNescLmXC7q5
+1kNTmEU=
+=8QM5
+-----END PGP PUBLIC KEY BLOCK-----'));
+The output of this query shows that the following public key was encrypting data:
+    pgp_key_id
+------------------
+ 2C226E1FFE5CC7D4
+(1 row)
+
+hrdb=# SELECT username, pgp_key_id(cc) As keyweused FROM testuserscards;
+
+SELECT username, pgp_pub_decrypt(cc, keys.privkey) As ccdecrypt
+FROM testuserscards 
+    CROSS JOIN
+    (SELECT dearmor('-----BEGIN PGP PRIVATE KEY BLOCK-----
+Version: GnuPG v1.4.1 (GNU/Linux)
+
+lQG7BELIIgoRBAC1onBpxKYgDvrgCaUWPY34947X3ogxGOfCN0p6Eqrx+2PUhm4n
+vFvmczpMT4iDc0mUO+iwnwsEkXQI1eC99g8c0jnZAvzJZ5miAHL8hukMAMfDkYke
+5aVvcPPc8uPDlItpszGmH0rM0V9TIt/i9QEXetpyNWhk4jj5qnohYhLeZwCgkOdO
+RFAdNi4vfFPivvtAp2ffjU8D/R3x/UJCvkzi7i9rQHGo313xxmQu5BuqIjANBUij
+8IE7LRPI/Qhg2hYy3sTJwImDi7VkS+fuvNVk0d6MTWplAXYU96bn12JaD21R9sKl
+Fzcc+0iZI1wYA1PczisUkoTISE+dQFUsoGHfpDLhoBuesXQrhBavI8t8VPd+nkdt
+J+oKA/9iRQ87FzxdYTkh2drrv69FZHc3Frsjw9nPcBq/voAvXH0MRilqyCg7HpW/
+T9naeOERksa+Rj4R57IF1l4e5oiiGJo9QmaKZcsCsXrREJCycrlEtMqXfSPy+bi5
+0yDZE/Qm1dwu13+OXOsRvkoNYjO8Mzo9K8wU12hMqN0a2bu6awAAn2F+iNBElfJS
+8azqO/kEiIfpqu6/DQG0I0VsZ2FtYWwgMjA0OCA8dGVzdDIwNDhAZXhhbXBsZS5v
+cmc+iF0EExECAB4FAkLIIgoCGwMGCwkIBwMCAxUCAwMWAgECHgECF4AACgkQSOnN
+Vv6maNvTwwCYkpcJmpl3aHCQdGomz7dFohDgjgCgiThZt2xTEi6GhBB1vuhk+f55
+n3+dAj0EQsgiIhAIAJI3Gb2Ehtz1taQ9AhPY4Avad2BsqD3S5X/R11Cm0KBE/04D
+29dxn3f8QfxDsexYvNIZjoJPBqqZ7iMXMhoWyw8ZF5Zs1mLIjFGVorePrm94N3MN
+PWM7x9M36bHUjx0vCZKFIhcGY1g+htE/QweaJzNVeA5z4qZmik41FbQyQSyHa3bO
+kTZu++/U6ghP+iDp5UDBjMTkVyqITUVNgC+MR+da/I60irBVhue7younh4ovF+Cr
+VDQJC06HZl6CAJJyA81SmRfi+dmKbbjZLF6rhz0norPjISJvkIqvdtM4VPBKI5wp
+gwCzpEqjuiKrAVujRT68zvBvJ4aVqb11k5QdJscAAwUH/jVJh0HbWAoiFTe+Nvoh
+frA8vPcD0rtU3Y+siiqrabotnxJd2NuCbxghJYGfNtnx0KDjFbCRKJVeTFok4Unu
+VYhXdH/c6i0/rCTNdeW2D6pmR4GfBozRPw/ARf+jONawGLyUj7uq13iquwMSE7Vy
+NuF3ycL2OxXjgOWMjkH8c+zfHHpjaZ0RQsetMq/iNBWraayKZnWUd+eQqNzE+NUo
+7w1jAu7oDpy+8a1eipxzK+O0HfU5LTiFZ1Oe4Um0P2l3Xtx8nEgj4vSeoEkl2qun
+fGW00ZMMTCWabg0ZgxPzMfMeIcm6525AYn2qL+X/qBJTInAl7/hgPz2D1Yd7d5/R
+dWYAAVQKFPXbRaxbdArwRVXMzSD3qj/+VwwhwEDt8zmBGnlBfwVdkjQQrDUMmV1S
+EwyISQQYEQIACQUCQsgiIgIbDAAKCRBI6c1W/qZo25ZSAJ4sgUfHTVsG/x3p3fcM
+3b5R86qKEACggYKSwPWCs0YVRHOWqZY0pnHtLH8=
+=3Dgk
+-----END PGP PRIVATE KEY BLOCK-----') As privkey) As keys;
+
+gpg --gen-key
+
+gpg --list-secret-keys
+
+gpg -a --export E0B81D3A > public.key
+
+gpg -a --export-secret-keys D9ABCD1E > secret.key
+
+
+
+RECIPE: Cracking PostgreSQL passwords
+
+create user xyz with password '123';
+create user john with password 'good';
+
+select usename as useraccount,passwd as "password"
+from pg_shadow
+where length(passwd)>1 order by usename;

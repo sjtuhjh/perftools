@@ -1,0 +1,87 @@
+DROP TABLE myt ;
+CREATE TABLE myt (id int, nm varchar(20));
+INSERT INTO myt VALUES(1,'First record');
+INSERT INTO myt VALUES(2,'Second record');
+COPY myt to '/tmp/file.csv';
+\! cat /tmp/file.csv
+\! rm /tmp/file.csv
+COPY ( SELECT * FROM myt ) TO '/tmp/file.csv';
+\! head /tmp/file.csv
+\! rm /tmp/file.csv
+COPY ( SELECT * FROM myt ) TO '/tmp/file.csv' WITH CSV;
+\! head /tmp/file.csv
+\! rm /tmp/file.csv
+COPY ( SELECT * FROM myt ) TO '/tmp/file.csv' WITH CSV HEADER;
+\! head /tmp/file.csv
+\! rm /tmp/file.csv
+COPY ( SELECT * FROM myt WHERE id =1 ) TO '/tmp/file.csv' WITH CSV;
+\! head /tmp/file.csv
+\! rm /tmp/file.csv
+\COPY (SELECT generate_series (1,2), 'AA') TO '/tmp/a.csv' DELIMITER '?';
+\! head /tmp/a.csv
+\! rm /tmp/a.csv
+COPY myt TO PROGRAM 'grep "First" > /tmp/file.csv ';
+\! cat /tmp/file.csv
+TRUNCATE myt;
+COPY myt FROM '/tmp/file.csv';
+SELECT * FROM myt;
+wget \
+http://pgfoundry.org/frs/download.php/3653/pg_bulkload-\
+3.1.6.tar.gz
+tar xvf ./pg_bulkload-3.1.6.tar.gz
+cd pg_bulkload-3.1.6
+make USE_PGXS=1
+su
+make USE_PGXS=1 install
+exit
+psql -d test
+CREATE EXTENSION pg_bulkload;
+
+more /tmp/file.csv 
+1	First record
+Bad	 Second record
+
+more /tmp/file.ctl
+TYPE = CSV
+INPUT = /tmp/file.csv
+DELIMITER = "	"
+TABLE = myt
+LOGFILE = /tmp/blk.log
+PARSE_BADFILE = /tmp/parse.csv
+
+pg_bulkload /tmp/file.ctl -d test
+
+more /tmp/parse.csv
+
+pg_dump -C > /tmp/a.sql
+grep "CREATE DATABASE" /tmp/a.sql | cut -f1-3 -d" "
+pg_dump -C -d test > /tmp/b.sql
+
+CREATE DATABASE test1;
+\c test1
+\d
+\q
+pg_dump -d test | psql -d test1
+
+psql -d test1
+\d
+
+pg_dump -Fd test -j2 -f /tmp/dmp
+ls -a /tmp/dmp/*
+pg_dump test --table='myt*' --schema-only
+
+CREATE DATABASE tblspctst;
+\c tblspctst
+DROP TABLESPACE IF EXISTS mytablespace1;
+\! mkdir /pgdata/mytblspc
+
+CREATE TABLESPACE mytablespace1 LOCATION
+'/pgdata/mytblspc';
+CREATE TABLE myt (id integer) TABLESPACE
+mytablespace;
+CREATE TABLE myt1 (id integer);
+
+pg_dump -Fc tblspctst > tblspctst.dmp
+pg_restore --list tblspctst.dmp > tblspctst.lst
+pg_restore -Fc -L tblspctst.lst tblspctst.dmp > a.sql
+pg_restore --no-tablespaces -Fc -L tblspctst.lst tblspctst.dmp > b.sql

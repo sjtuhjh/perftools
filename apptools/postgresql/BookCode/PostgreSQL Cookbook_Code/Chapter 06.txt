@@ -1,0 +1,160 @@
+RECIPE: Checking active sessions
+
+SELECT pid , usename, application_name, client_addr, client_hostname, query, state FROM pg_stat_activity
+WHERE datname='dvdrental';
+
+SELECT datname , procpid, usename,application_name,client_addr, client_hostname,current_query FROM pg_stat_activity;
+
+
+
+
+RECIPE: Finding out what queries users are currently running
+
+track_activities = on
+
+pg_ctl -D $PGDATA reload
+
+SELECT datname, pid, usename, query_start, state, query
+FROM pg_stat_activity
+
+
+
+
+RECIPE: Getting the execution plan for a statement
+
+dvdrental=# EXPLAIN select * from payment where amount > 4.99;
+
+dvdrental=# EXPLAIN ANALYZE select * from payment where amount > 4.99;
+
+dvdrental=# EXPLAIN VERBOSE select * from payment where amount > 4.99;
+
+
+
+
+RECIPE: Logging slow statements
+
+logging_collector = on
+log_directory = 'pg_log'
+log_min_duration_statement = 100
+
+pg_ctl -D $PGDATA restart
+
+
+
+
+RECIPE: Collecting statistics
+
+track_activities = on
+track_counts = on
+track_functions = all
+track_io_timing = on
+
+pg_ctl -D $PGDATA reload
+
+
+
+
+RECIPE: Monitoring database load
+
+dvdrental=# SELECT numbackends as CONN, xact_commit as TX_COMM,
+xact_rollback as
+TX_RLBCK, blks_read + blks_hit as READ_TOTAL,
+blks_hit * 100 / (blks_read + blks_hit)
+as BUFFER FROM pg_stat_database WHERE datname = 'dvdrental';
+
+dvdrental=# SELECT pg_stat_reset();
+
+
+
+
+RECIPE: Finding blocking sessions
+
+SELECT bl.pid AS blocked_pid,
+  a.usename AS blocked_user,
+  ka.query AS blocking_statement,
+  now() - ka.query_start AS blocking_duration,
+  kl.pid AS blocking_pid,
+  ka.usename AS blocking_user,
+  a.query AS blocked_statement,
+  now() - a.query_start AS blocked_duration
+FROM  pg_catalog.pg_locks bl
+JOIN pg_catalog.pg_stat_activity a  ON a.pid = bl.pid
+JOIN pg_catalog.pg_locks kl ON kl.transactionid = bl.transactionid AND kl.pid != bl.pid
+JOIN pg_catalog.pg_stat_activity ka ON ka.pid = kl.pid
+WHERE NOT bl.granted;
+
+SELECT bl.pid AS blocked_pid,
+  a.usename AS blocked_user,
+  ka.current_query AS blocking_statement,
+  now() - ka.query_start AS blocking_duration,
+  kl.pid AS blocking_pid,
+  ka.usename AS blocking_user,
+  a.current_query AS blocked_statement,
+  now() - a.query_start AS blocked_duration
+FROM  pg_catalog.pg_locks bl
+JOIN pg_catalog.pg_stat_activity a  ON a.procpid = bl.pid
+JOIN pg_catalog.pg_locks kl ON kl.transactionid = bl.transactionid AND kl.pid != bl.pid
+JOIN pg_catalog.pg_stat_activity ka ON ka.procpid = kl.pid
+WHERE NOT bl.granted;
+
+
+
+
+RECIPE: Table access statistics
+
+dvdrental=# SELECT schemaname,relname,seq_scan,idx_scan,cast(idx_scan AS numeric) / (idx_scan + seq_scan) AS idx_scan_pct FROM pg_stat_user_tables WHERE (idx_scan + seq_scan)>0 ORDER BY idx_scan_pct;
+
+dvdrental=# SELECT relname,seq_tup_read,idx_tup_fetch,cast(idx_tup_fetch AS numeric) / (idx_tup_fetch + seq_tup_read) AS idx_tup_pct FROM pg_stat_user_tables WHERE (idx_tup_fetch + seq_tup_read)> 0 ORDER BY idx_tup_pct;
+
+
+
+
+RECIPE: Finding unused indexes
+
+SELECT
+    relid::regclass AS table, 
+    indexrelid::regclass AS index, 
+    pg_size_pretty(pg_relation_size(indexrelid::regclass)) AS index_size, 
+    idx_tup_read, 
+    idx_tup_fetch, 
+    idx_scan
+FROM pg_stat_user_indexes 
+JOIN pg_index USING (indexrelid) 
+WHERE idx_scan = 0 
+AND indisunique IS FALSE;
+
+SELECT pg_size_pretty(sum(pg_relation_size(idx))::bigint) AS size,(array_agg(idx))[1] AS idx1, (array_agg(idx))[2] AS idx2,(array_agg(idx))[3] AS idx3, (array_agg(idx))[4] AS idx4
+FROM (SELECT indexrelid::regclass AS idx, (indrelid::text ||E'\n'|| indclass::text ||E'\n'|| indkey::text ||E'\n'|| coalesce(indexprs::text,'')||E'\n' || coalesce(indpred::text,'')) AS KEY
+FROM pg_index) sub
+GROUP BY KEY HAVING count(*)>1
+ORDER BY sum(pg_relation_size(idx)) DESC;
+
+
+
+
+RECIPE: Forcing a query to use an index
+
+dvdrental=# create table test_no_index(id int);
+
+dvdrental=# set enable_seqscan to false;
+
+dvdrental=# explain select * from test_no_index where id > 12;
+
+dvdrental=# create index new_idx_test_no_index on test_no_index(id);
+
+dvdrental=# explain select * from test_no_index where id > 12;
+
+dvdrental=# set random_page_cost = 2;
+
+
+
+
+RECIPE: Determining disk usage
+
+dvdrental=#  SELECT pg_size_pretty(pg_database_size('dvdrental')) As fulldbsize;
+
+SELECT
+   relname as "Table",
+   pg_size_pretty(pg_relation_size(relid)) As " Table Size",
+   pg_size_pretty(pg_total_relation_size(relid) - pg_relation_size(relid)) as "Index Size"
+   FROM pg_catalog.pg_statio_user_tables ORDER BY pg_total_relation_size(relid) DESC;

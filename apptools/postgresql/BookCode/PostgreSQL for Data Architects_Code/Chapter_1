@@ -1,0 +1,50 @@
+wget http://ftp.postgresql.org/pub/source/v9.3.0/postgresql-9.3.0.tar.gz
+tar -xvf postgresql-9.3.0.tar.gz
+cd postgresql-9.3.0
+find ./ -maxdepth 1 -type d
+sudo yum groupinstall 'Development Tools'
+./configure --help > /tmp/config.txt
+yum install readline-devel.x86_64
+# Install other missing libraries
+./configure --with-libxml
+# Or ./configure
+gmake world
+gmake install-world
+cd /usr/local/pgsql/share/extension
+more dblink.control
+adduser postgres
+mkdir -p /pgdata/9.3
+chown postgres /pgdata/9.3
+su - postgres
+vi .bash_profile
+PATH=$PATH:/usr/local/pgsql/bin
+which initdb
+exit
+su - postgres
+which initdb
+initdb --help | more
+initdb --pgdata=/pgdata/9.3 --pwprompt
+cd /pgdata/9.3
+find ./ -maxdepth 1 -type d
+export PGDATA=/pgdata/9.3/
+pg_ctl start
+cd /pgdata/9.3/base
+pwd
+find ./ -type d
+oid2name
+psql
+\! ls
+CREATE DATABASE test;
+\! ls
+DROP DATABASE test;
+\! ls
+ps -fupostgres
+pg_ctl status
+cd $PGDATA
+head -1 postmaster.pid
+\dx
+SELECT name,comment FROM pg_available_extensions limit 5;
+CREATE EXTENSION dblink ;
+\dx
+DROP EXTENSION dblink ;
+\dx

@@ -1,0 +1,22 @@
+psql --host=localhost --dbname=test
+psql  -h localhost -d test
+\d
+\dt
+\ds
+
+psql  -h localhost -d test -E
+\o out.txt
+show data_directory;
+\! cat out.txt
+\! ls
+\o 
+\! rm out.txt
+\! ls
+\! echo "SELECT 1; " > a.sql
+\i a.sql 
+\! cat a.sql
+\timing
+select now();
+\set PROMPT1 '%n@%/  '
+\timing
+\set HISTFILE ~/history-:DBNAME 

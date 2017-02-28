@@ -1,0 +1,87 @@
+EXPLAIN SELECT first_name FROM customer_master
+WHERE first_name = 'Carolee';
+EXPLAIN ANALYZE select first_name from customer_master where 
+first_name = 'Carolee';
+EXPLAIN (ANALYZE,buffers,format yaml) SELECT first_name FROM
+customer_master WHERE first_name = 'Carolee';
+CREATE TABLE order_header(
+order_no serial PRIMARY KEY, order_date date
+);
+CREATE TABLE order_lines ( 
+line_no serial NOT NULL, order_no integer, product_name varchar,qty 
+ integer,descr varchar, created_ts timestamp, modified_ts timestamp
+, CONSTRAINT fk_order_lines FOREIGN KEY (order_no) 
+REFERENCES order_header (order_no) 
+MATCH SIMPLE ON UPDATE CASCADE ON DELETE CASCADE );
+
+WITH rws AS (
+INSERT INTO order_header(order_no, order_date )
+SELECT GENERATE_SERIES(1,5000000) T , now()
+RETURNING order_no
+)
+INSERT into order_lines(line_no , order_no,product_name,qty, descr,
+created_ts, modified_ts)
+SELECT generate_series(1,4) line_no, order_no, 'Theproduct',
+100 , repeat('The description for the product',10), now(), now()
+FROM rws;
+SELECT * FROM order_header oh
+JOIN order_lines ol ON oh.order_no=ol.order_no
+WHERE oh.order_no= 60;
+
+CREATE INDEX ol_idx ON order_lines(order_no);
+
+SELECT * FROM order_header oh
+JOIN order_lines ol ON oh.order_no=ol.order_no
+WHERE oh.order_no= 90000;
+
+EXPLAIN SELECT first_name, last_name
+FROM customer_master
+ORDER BY last_name LIMIT 10;
+
+CREATE INDEX cust_mst_idx1 ON customer_master (first_name);
+
+EXPLAIN SELECT first_name, last_name
+FROM customer_master
+ORDER BY last_name LIMIT 10;
+
+EXPLAIN SELECT first_name FROM customer_master
+WHERE first_name ='Julia';
+
+EXPLAIN SELECT first_name FROM customer_master
+WHERE UPPER(first_name) ='Julia';
+
+CREATE INDEX ON customer_master(UPPER(FIRST_NAME));
+
+EXPLAIN SELECT first_name FROM customer_master
+WHERE UPPER(first_name) ='Julia';
+
+CREATE OR REPLACE FUNCTION test_exec(str text)
+RETURNS text AS
+$BODY$
+DECLARE
+ac_type text;
+BEGIN
+FOR i in 1..1000
+LOOP
+SELECT substring(str,1,1) INTO ac_type;
+END LOOP;
+RETURN ac_type;
+END;
+$BODY$
+LANGUAGE plpgsql VOLATILE
+COST 100;
+ALTER FUNCTION test_exec(text)
+OWNER TO postgres;
+
+SET track_functions TO 'all';
+SELECT pg_stat_reset();
+SELECT * FROM pg_stat_user_functions;
+SELECT test_exec('a'), generate_series(1,5);
+SELECT * FROM pg_stat_user_functions;
+
+ALTER FUNCTION test_exec (text) IMMUTABLE;
+SELECT test_exec('a'), generate_series(1,5);
+SELECT * FROM pg_stat_user_functions;
+
+
+

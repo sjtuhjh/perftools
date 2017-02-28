@@ -1,0 +1,225 @@
+RECIPE: Installing pgpool
+
+tar -xzf pgpool-II-3.4.0.tar.gz
+
+cd pgpool-II-3.4.0
+
+./configure –prefix=/usr/local --sysconfdir=/etc/pgpool/
+
+make
+
+make install
+
+apt-get install pgpool2
+
+yum install pgpool-II-93
+
+mkdir /var/log/pgpool
+
+chown –R postgres:postgres /var/log/pgpool
+
+mkdir /var/run/pgpool
+
+chown –R postgres:postgres /var/run/pgpool
+
+
+
+
+
+RECIPE: Configuring pgpool and testing the setup
+
+initdb -D /var/lib/pgsql/9.3/data1
+
+cd /var/lib/pgsql/9.3/data1
+
+vi postgresql.conf
+port=5433
+
+pg_ctl -D /var/lib/pgsql/9.3/data1 start
+
+cd /etc/pgpool-II-93
+
+cp pgpool.conf.sample /etc/pgpool.conf
+
+cp pcp.conf.sample /etc/pcp.conf
+
+pg_md5 postgres
+
+e8a48653851e28c69d0506508fb27fc5
+
+vi /etc/pcp.conf
+postgres:e8a48653851e28c69d0506508fb27fc5
+
+listen_addresses = 'localhost'
+port = 9999
+socket_dir = '/tmp'
+pcp_port = 9898
+pcp_socket_dir = '/tmp'
+backend_hostname0 = 'localhost'
+backend_port0 = 5432
+backend_weight0 = 1
+backend_data_directory0 = '/var/lig/pgsql/9.3/data'
+backend_flag0 = 'ALLOW_TO_FAILOVER'
+backend_hostname1 = 'localhost'
+backend_port1 = 5433
+backend_weight1 = 1
+backend_data_directory1 = '/var/lib/pgsql/9.3/data1'
+backend_flag1 = 'ALLOW_TO_FAILOVER'
+enable_pool_hba = off
+pool_passwd = 'pool_passwd'
+authentication_timeout = 60
+ssl = off
+num_init_children = 32
+max_pool = 4
+child_life_time = 300
+child_max_connections = 0
+connection_life_time = 0
+client_idle_limit = 0
+connection_cache = on
+reset_query_list = 'ABORT; DISCARD ALL'
+replication_mode = on
+master_slave_mode = off
+replicate_select = off
+insert_lock = on
+load_balance_mode = on
+ignore_leading_white_space = on
+white_function_list = ''
+black_function_list = 'nextval,setval'
+
+pgpool -f /etc/pgpool.conf -F /etc/pcp.conf
+psql -p 9999 postgres postgres
+
+-bash-4.1$ ps ax |grep pool
+
+-bash-4.1$ pcp_node_info 5 localhost 9898 postgres postgres 0 localhost 5432 1 0.500000
+-bash-4.1$ pcp_node_info 5 localhost 9898 postgres postgres 1 localhost 5433 1 0.500000
+
+psql -p 9999
+
+postgres=# create table emp(age int);
+
+postgres=# insert into emp values (1);
+
+postgres=# insert into emp values (2);
+
+postgres=# insert into emp values (3);
+
+postgres=# insert into emp values (4);
+
+postgres=# insert into emp values (5);
+
+postgres=# insert into emp values (6);
+
+postgres=# \dt
+
+postgres=# select * from emp;
+
+psql -p 5433
+
+postgres=# \dt
+
+postgres=# select * from emp;
+
+-bash-4.1$ psql -p 5432
+
+postgres=# \dt
+
+postgres=# select * from emp;
+
+-bash-4.1$ pcp_node_info 5 localhost 9898 postgres postgres 0
+
+localhost 5432 1 0.500000
+
+-bash-4.1$ pcp_node_info 5 localhost 9898 postgres postgres 1
+
+localhost 5433 1 0.500000
+
+pcp_attach_node 5 localhost 5433 postgres postgres 1
+
+
+
+
+RECIPE: Starting and stopping pgpool
+
+service pgpool start
+
+pgpool
+
+service pgpool stop
+
+pgpool stop
+
+pgpool [-c][-f config_file][-a hba_file][-F pcp_config_file]
+
+pgpool [-f config_file][-F pcp_config_file] [-m {s[mart]|f[ast]|]}] stop
+
+pgpool -m fast stop
+
+
+
+
+RECIPE: Setting up pgbouncer
+
+apt-get install pgbouncer
+
+yum install pgbouncer
+
+tar -xzf pgbouncer-1.5.4.tar.gz
+
+cd pgbouncer-1.5.4
+
+./configure –prefix=/usr/local
+
+make & make install
+
+mkdir /etc/pgbouncer
+
+chown -R postgres:postgres /etc/pgbouncer
+
+
+
+
+RECIPE: Connection pooling using pgbouncer
+
+vi /etc/pgbouncer/pgbouncer.ini
+postgres = host=localhost dbname=postgres
+pgtest = host=localhost dbname=pgtest
+listen_addr = *
+auth_file = /etc/pgbouncer/userlist.txt
+auth_type = md5
+
+postgres=# CREATE role author LOGIN PASSWORD 'author' SUPERUSER;
+
+postgres=# select rolname ,rolpassword from pg_authid where rolname='author';
+
+vi /etc/pgbouncer/userlist.txt
+"author" "md5d50afb6ec7b2501164b80a0480596ded"
+
+service pgbouncer start
+
+psql -h localhost -p 6432 -d postgres -U author -W
+
+createdb pgtest
+pgbench -i -s 10 pgtest
+
+-bash-3.2$ pgbench -t 1000 -c 20 -C -S pgtest
+
+-bash-3.2$ pgbench -t 1000 -c 20 -C -S pgtest -p 6432 -U author
+
+
+
+
+RECIPE: Managing pgbouncer
+
+vi /etc/pgbouncer/pgbouncer.ini
+admin_users = author
+
+service pgbouncer restart
+
+psql -p 6432 -U author pgbouncer
+
+postgres=# show clients;
+
+postgres=# show servers;
+
+postgres=# show pools;

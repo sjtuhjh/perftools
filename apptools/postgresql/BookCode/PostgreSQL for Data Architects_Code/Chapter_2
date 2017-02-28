@@ -1,0 +1,143 @@
+ps f -U postgres
+CREATE DATABASE test;
+CREATE DATABASE mydb;
+CREATE EXTENSION pg_buffercache;
+cd /usr/local/pgsql/share/extension
+more pg_buffercache--1.0.sql
+psql -d test
+SELECT DISTINCT reldatabase FROM pg_buffercache;
+\! oid2name
+SELECT
+c.relname,
+count(*) AS buffers
+FROM pg_class c
+JOIN pg_buffercache b
+ON b.relfilenode=c.relfilenode
+INNER JOIN pg_database d
+ON (b.reldatabase=d.oid AND d.datname=current_database())
+GROUP BY c.relname
+ORDER BY 2 DESC;
+SELECT
+c.relname,
+count(*) AS buffers
+FROM pg_class c
+JOIN pg_buffercache b
+ON b.relfilenode=c.relfilenode
+JOIN pg_database d
+ON (b.reldatabase=d.oid AND d.datname=current_database())
+WHERE c.relname NOT LIKE 'pg%' GROUP BY c.relname
+ORDER BY 2 DESC;
+CREATE TABLE emp(id serial, first_name varchar(50));
+INSERT INTO emp(first_name) VALUES('Jayadeva');
+SELECT
+c.relname,
+b.isdirty
+FROM pg_class c JOIN pg_buffercache b
+ON b.relfilenode=c.relfilenode
+JOIN pg_database d
+ON (b.reldatabase=d.oid AND d.datname=current_database())
+WHERE c.relname not like 'pg%';
+UPDATE emp SET first_name ='Newname';
+CHECKPOINT;
+
+SELECT * FROM emp;
+SELECT pg_relation_filepath('emp');
+\! ls -l /pgdata/9.3/base/16431/16441
+
+INSERT INTO emp(id , first_name) SELECT
+generate_series(1,5000000),
+'A longer name ';
+ls -lh 16441*
+
+cd /pgdata/9.3/pg_xlog
+ls -alrt
+psql
+SELECT pg_xlogfile_name(pg_current_xlog_location());
+grep wal postgresql.conf
+
+createdb vac
+oid2name | grep vac
+cd /pgdata/9.3/base/16445/
+psql -d vac
+\! pwd
+\! ls | head -5
+CREATE TABLE myt(id integer);
+SELECT pg_relation_filepath('myt');
+\! ls -lt 16446*
+SELECT pg_total_relation_size('myt');
+INSERT INTO myt SELECT generate_series (1,100000);
+SELECT pg_total_relation_size('myt');
+\! ls -lt | head -5
+DELETE FROM myt WHERE id> 5 AND id <100000;
+SELECT pg_total_relation_size('myt');
+VACUUM myt;
+INSERT INTO myt SELECT generate_series (1,1000);
+select pg_total_relation_size('myt');
+\! ls -lt 16446*
+VACUUM FULL myt;
+SELECT pg_total_relation_size('myt');
+SELECT pg_relation_filepath('myt');
+\! ls -lt | head -5
+vim postgresql.conf
+pg_ctl restart
+ps f -U postgres
+psql -d test
+
+CREATE OR REPLACE FUNCTION audit_tbl()
+RETURNS trigger AS
+$BODY$
+DECLARE
+aud_data text;
+BEGIN
+aud_data =NEW.first_name;
+RAISE LOG 'Audit data : %', aud_data;
+RETURN NEW;
+END;$BODY$
+LANGUAGE plpgsql;
+
+CREATE TRIGGER emp_trg
+BEFORE INSERT
+ON emp
+FOR EACH ROW
+EXECUTE PROCEDURE audit_tbl();
+
+INSERT INTO emp (first_name) values ('Scott');
+\d+ pg_statio_user_tables
+\d+ pg_statio_all_tables
+SELECT relname, n_tup_ins FROM pg_stat_user_tables;
+SELECT pg_stat_reset();
+select relname, n_tup_ins from pg_stat_user_tables;
+INSERT INTO emp(first_name) VALUES ('Scottnew');
+SELECT relname, n_tup_ins FROM pg_stat_user_tables;
+grep work postgresql.conf
+
+CREATE TABLE myt (id serial);
+INSERT INTO myt select generate_series (1,1000000);
+SELECT * FROM ( SELECT * FROM myt ORDER BY id ) t
+limit 1000;
+SELECT temp_files, temp_bytes FROM pg_stat_database
+WHERE
+datname = 'postgres';
+SHOW work_mem;
+SET work_mem to '1MB';
+SELECT * FROM ( SELECT * FROM myt ORDER BY id ) t
+limit 1000;
+SELECT temp_files, temp_bytes FROM pg_stat_database
+WHERE
+datname = 'postgres';
+\timing on
+SELECT pg_size_pretty(pg_table_size('myt'));
+SELECT current_database();
+SELECT temp_files, temp_bytes FROM pg_stat_database
+WHERE datname = 'postgres';
+CREATE INDEX myindex ON myt(id);
+DROP INDEX myindex;
+CREATE INDEX myindex on myt(id);
+SELECT temp_files, temp_bytes FROM pg_stat_database
+WHERE datname = 'postgres';
+DROP INDEX myindex;
+SET maintenance_work_mem TO '1GB';
+CREATE INDEX myindex ON myt(id);
+SELECT temp_files, temp_bytes FROM pg_stat_database
+WHERE datname = 'postgres';
+RESET maintenance_work_mem;

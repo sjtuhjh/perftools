@@ -1,0 +1,19 @@
+--
+-- PostgreSQL Administration Cookbook
+-- 	Simon Riggs & Hannu Krosing
+
+--
+-- Chapter 12: Replication
+--
+
+CREATE OR REPLACE VIEW pg_stat_replication AS
+    SELECT
+            S.procpid,
+            S.usesysid,
+            U.rolname AS usename,
+            S.application_name,
+            S.client_addr,
+            S.client_port,
+            S.backend_start
+    FROM pg_stat_get_activity(NULL) AS S, pg_authid U
+    WHERE S.usesysid = U.oid AND S.datid = 0;

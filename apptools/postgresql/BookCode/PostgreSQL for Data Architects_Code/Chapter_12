@@ -1,0 +1,255 @@
+CREATE TABLE rooms(id serial, descr varchar(50));
+INSERT INTO rooms(descr)
+SELECT concat('Room ', generate_series(1,3));
+CREATE TABLE room_book (id serial , room_id integer, from_time
+timestamp, to_time timestamp , res tsrange);
+INSERT INTO room_book (room_id,from_time,to_time,res)
+values(1,'2014-7-30 10:00:00', '2014-7-30 11:00:00', '(2014-7-30
+10:00:00,2014-7-30 11:00:00)');
+INSERT INTO room_book (room_id,from_time,to_time,res)
+values(2,'2014-7-30 10:00:00', '2014-7-30 10:40:00', '(2014-7-30
+10:00,2014-7-30 10:40:00)');
+INSERT INTO room_book (room_id,from_time,to_time,res)
+values(2,'2014-7-30 11:20:00', '2014-7-30 12:00:00', '(2014-7-30
+11:20:00,2014-7-30 12:00:00)');
+INSERT INTO room_book (room_id,from_time,to_time,res)
+values(3,'2014-7-30 11:00:00', '2014-7-30 11:30:00', '(2014-7-30
+11:00:00,2014-7-30 11:30:00)');
+SELECT room_id FROM room_book WHERE (from_time,to_time) OVERLAPS
+('2014-07-30 10:45:00','2014-07-30 11:15:00');
+
+SELECT id FROM rooms
+EXCEPT
+SELECT room_id FROM room_book WHERE (from_time,to_time) OVERLAPS
+('2014-07-30 10:45:00','2014-07-30 11:15:00');
+
+SELECT id FROM rooms
+EXCEPT
+SELECT room_id FROM room_book WHERE res && '(2014-07-30
+10:45:00,2014-07-30 11:15:00)';
+SELECT id FROM rooms
+EXCEPT
+SELECT room_id FROM room_book WHERE
+'2014-07-30 10:45:00' < to_time AND '2014-07-30 11:15:00' >
+from_time;
+SELECT int4range(3,5,'[)') lowerincl ,int4range(3,5,'[]')
+bothincl,
+int4range(3,5,'()') bothexcl , int4range(3,5,'[)') upperexcl;
+
+CREATE TABLE nettb (id serial, intclmn inet, cidrclmn cidr);
+INSERT INTO nettb (intclmn , cidrclmn) VALUES
+('192.168.64.2/32', '192.168.64.2/32');
+INSERT INTO nettb (intclmn , cidrclmn) VALUES
+('192.168.64.2/24', '192.168.64.2/24');
+INSERT INTO nettb (intclmn , cidrclmn) VALUES
+('192.168.64.2/24', '192.168.64.0/24');
+SELECT * FROM nettb;
+SELECT id,intclmn FROM nettb ;
+SELECT id,intclmn FROM nettb where intclmn <<=
+inet'192.168.12.2/16';
+SELECT id,intclmn FROM nettb where intclmn <<=
+inet'192.168.12.2/24';
+SELECT id,intclmn FROM nettb where intclmn <<=
+inet'192.168.12.2/32';
+
+CREATE EXTENSION hstore;
+
+CREATE TABLE customer(id serial, first_name varchar(50),
+dynamic_attributes hstore);
+INSERT INTO customer (first_name ,dynamic_attributes) VALUES
+('Michael','ssn=>"123-465-798" '),
+('Smith','ssn=>"129-465-798" '),
+('James','ssn=>"No data" '),
+('Ram','uuid=>"1234567891" , npr=>"XYZ5678",
+ratnum=>"Somanyidentifiers" ');
+
+SELECT first_name, dynamic_attributes FROM customer
+WHERE dynamic_attributes ? 'ssn';
+
+SELECT first_name,dynamic_attributes FROM customer
+WHERE dynamic_attributes -> 'ssn'= '123-465-798';
+
+SELECT first_name,dynamic_attributes FROM customer
+WHERE NOT dynamic_attributes -> 'ssn'= '123-465-798';
+
+SELECT first_name,dynamic_attributes FROM customer
+WHERE NOT dynamic_attributes ? 'ssn';
+
+CREATE TABLE items (
+item_id serial,
+details json
+);
+
+INSERT INTO items (details) VALUES
+( '{"Books":[ {"Name":"The story of money","Type":"History",
+"Publisher":"Wellesley",
+"Authors":[{"Name":"Adam"},{"Name":"Smith"}] }]}');
+
+INSERT INTO items (details) VALUES 
+('{
+                 "DVDs" :[ 
+                         {"Name":"The Making of Thunderstorms", "Types":"Educational",
+                         "Age-group":"5-10","Produced By":"National Geographic"
+                         },
+                         {"Name":"My nightmares", "Types":"Movies", "Categories":"Horror",
+                          "Certificate":"A", "Director":"Dracula","Actors":
+                               [{"Name":"Meena"},{"Name":"Lucy"},{"Name":"Van Helsing"}] 
+                         },
+                         {"Name":"My Cousin Vinny", "Types":"Movies", "Categories":"Suspense",
+                          "Certificate":"A", "Director": "Jonathan Lynn","Actors":
+                          [{"Name":"Joe "},{"Name":"Marissa"}] }] 
+ }'
+ );
+
+SELECT details->>'DVDs' dvds, pg_typeof(details->>'DVDs')
+datatype
+FROM items;
+SELECT details->'DVDs' dvds ,pg_typeof(details->'DVDs')
+datatype
+FROM items;
+
+WITH tmp (dvds) AS
+(SELECT json_array_elements(details->'DVDs') det FROM items)
+SELECT * FROM tmp , json_array_elements(tmp.dvds#>'{Actors}') as a
+WHERE
+a->>'Name'='Meena';
+
+CREATE TABLE tbl_xml(id serial, docmnt xml);
+INSERT INTO tbl_xml(docmnt ) VALUES ('Not xml');
+INSERT INTO tbl_xml (docmnt)
+SELECT query_to_xml( 'SELECT now()',true,false,'') ;
+SELECT xml_is_well_formed_document(docmnt::text), docmnt
+FROM tbl_xml;
+
+\c pgp
+CREATE EXTENSION file_fdw;
+CREATE SERVER file_server FOREIGN DATA WRAPPER file_fdw;
+CREATE FOREIGN TABLE file_to_tbl(
+id integer, name varchar(40)
+)
+SERVER file_server
+OPTIONS (
+delimiter ',',
+filename '/home/postgres/names.csv',
+format 'csv'
+);
+
+vim /home/postgres/names.csv
+1,Jayadevan
+2,Steve
+3,Jones
+4,Anne
+5,Julie
+
+SELECT * FROM file_to_tbl;
+SELECT * FROM file_to_tbl where id = 4;
+
+# As postgres
+CREATE USER myuser1 PASSWORD 'myuser';
+ALTER USER myuser1 WITH CREATEDB;
+\c pgp
+CREATE TABLE prod_table (id serial, name varchar(50));
+INSERT INTO prod_table (name) VALUES ('Scott'), ('Thomson');
+GRANT SELECT on prod_table to myuser1;
+
+# As myuser1
+psql -U myuser1 -d postgres
+CREATE DATABASE reports;
+# As postgres
+\c reports
+CREATE EXTENSION postgres_fdw ;
+CREATE SERVER f_prod FOREIGN DATA WRAPPER postgres_fdw
+OPTIONS (
+dbname 'pgp',
+host '192.168.56.101',
+port '5432'
+);
+ALTER SERVER f_prod OWNER TO myuser1;
+CREATE USER MAPPING FOR myuser1 SERVER f_prod OPTIONS (
+user 'myuser1',
+password 'myuser'
+);
+# as myuser1
+psql -U myuser1 -d reports
+
+\c reports
+CREATE FOREIGN TABLE prod_table (
+id integer ,
+name varchar(100)
+)
+SERVER f_prod;
+SELECT * FROM prod_table;
+
+# If you get an error related to authenticaiotn, now you know how to fix it. Hint : pg_hba.conf
+
+vim postgresql.conf
+
+log_destination = 'stderr'
+logging_collector = on
+log_directory = 'pg_log'
+log_filename = 'postgresql-%Y-%m-%d.log'
+log_min_duration_statement = 0
+log_connections = on
+log_disconnections = on
+log_duration = on
+log_line_prefix = '%t [%p]: [%l-1] user=%u,db=%d '
+log_lock_waits = on
+track_activity_query_size = 2048
+
+
+pg_ctl restart
+
+pgbench -i pgp
+psql -d pgp
+\dt
+pgbench -c 5 -T10 pgp
+
+wget https://github.com/dalibo/pgbadger/archive/master.zip
+unzip master.zip
+cd pgbadger-master
+./pgbadger /pgdata/9.3/pg_log/postgresql-2014-11-23.log -o myoutput.html
+
+# Use PostgreSQL 9.4 and above for following.
+CREATE EXTENSION pg_prewarm;
+CREATE TABLE myt(id SERIAL, name VARCHAR(40));
+INSERT INTO myt(name) SELECT concat(generate_series(1,10000),'name');
+\q
+pg_ctl stop 
+# as root
+echo 1 > /proc/sys/vm/drop_caches
+pg_ctl start
+psql
+SELECT COUNT(*) FROM myt;
+\q
+
+pg_ctl stop 
+# as root
+echo 1 > /proc/sys/vm/drop_caches
+pg_ctl start
+psql
+SELECT pg_prewarm('myt'); 
+SELECT COUNT(*) FROM myt;
+
+cd $PGDATA
+pwd
+/pgdata/9.4
+psql
+ALTER SYSTEM SET work_mem='12MB';
+\! more postgresql.auto.conf
+SELECT pg_reload_conf(); 
+\q
+vim postgresql.conf
+max_replication_slots = 2
+wal_level = logical 
+
+pg_ctl restart
+psql
+SELECT * FROM
+pg_create_logical_replication_slot('myslot','test_decoding');
+
+INSERT INTO myt(id) values (4);
+INSERT INTO myt(name) values ('abc');
+SELECT * FROM pg_logical_slot_peek_changes('myslot',NULL,NULL);
+SELECT * FROM pg_logical_slot_get_changes('myslot',NULL,NULL);
+
+

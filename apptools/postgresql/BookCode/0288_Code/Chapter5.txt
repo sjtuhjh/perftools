@@ -1,0 +1,115 @@
+--
+-- PostgreSQL Administration Cookbook
+-- 	Simon Riggs & Hannu Krosing
+
+--
+-- Chapter 5: Tables & Data
+--
+-- You can run this using
+-- 		psql -f chapter5.txt
+--
+
+CREATE OR REPLACE VIEW diff_all_column_definitions
+AS
+SELECT
+ table_schema
+,table_name
+,column_name
+,data_type
+  ||coalesce(' ' || text(character_maximum_length), '')
+  ||coalesce(' ' || text(numeric_precision), '')
+  ||coalesce(',' || text(numeric_scale), '')
+  as data_type
+FROM information_schema.columns
+WHERE column_name IN
+(SELECT
+ column_name
+FROM
+(SELECT
+  column_name
+ ,data_type
+ ,character_maximum_length
+ ,numeric_precision
+ ,numeric_scale
+ FROM information_schema.columns
+ WHERE table_schema = 'public'
+ GROUP BY
+  column_name
+ ,data_type
+ ,character_maximum_length
+ ,numeric_precision
+ ,numeric_scale
+) derived
+GROUP BY column_name
+HAVING count(*) > 1
+)
+AND table_schema NOT IN ('information_schema', 'pg_catalog')
+ORDER BY column_name
+;
+
+CREATE OR REPLACE VIEW diff_all_table_definitions
+AS
+SELECT
+ table_schema
+,table_name
+,column_name
+,data_type
+FROM information_schema.columns
+WHERE table_name IN
+(SELECT
+  table_name
+ FROM                            
+ (SELECT
+   table_schema
+  ,table_name
+  ,string_agg(' '||column_name||' '||data_type, ',')
+  FROM information_schema.columns
+  GROUP BY
+   table_schema
+  ,table_name
+ ) def
+ GROUP BY
+  table_name
+ HAVING
+  count(*) > 1
+)
+ORDER BY
+ table_name
+,table_schema
+,column_name;
+
+CREATE OR REPLACE FUNCTION diff_table_definition
+(t1_schemaname text
+,t1_tablename text
+,t2_schemaname text
+,t2_tablename text)
+RETURNS TABLE
+(t1_column_name text
+,t1_data_type text
+,t2_column_name text
+,t2_data_type text
+)
+LANGUAGE SQL
+as
+$$
+SELECT
+ t1.column_name
+,t1.data_type
+,t2.column_name
+,t2.data_type
+FROM
+ (SELECT column_name, data_type
+  FROM information_schema.columns
+  WHERE table_schema = $1
+	AND table_name = $2
+ ) t1
+ FULL OUTER JOIN
+ (SELECT column_name, data_type
+  FROM information_schema.columns
+  WHERE table_schema = $3
+	AND table_name = $4
+ ) t2
+ ON (t1.column_name = t2.column_name)
+WHERE t1.column_name IS NULL OR t2.column_name IS NULL
+;
+$$;

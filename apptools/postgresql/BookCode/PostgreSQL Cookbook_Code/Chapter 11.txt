@@ -1,0 +1,200 @@
+RECIPE: Making connections to a PostgreSQL database using Python
+
+sudo yum install python-psycopg2
+
+#!/usr/bin/python
+import psycopg2
+conn = psycopg2.connect(database="dvdrental", user="postgres",
+password="postgres", host="127.0.0.1", port="5432")
+print "Opened DVD Rental Database Successfully Using Python"
+
+-bash-3.2$ python connect.py
+
+conn = psycopg2.connect(database="dvdrental", user="postgres", password="postgres", host="127.0.0.1", port="5432")
+
+
+
+
+RECIPE: Creating tables using Python
+
+#!/usr/bin/python
+
+import psycopg2
+
+conn = psycopg2.connect(database="dvdrental", user="postgres", password="postgres", host="127.0.0.1", port="5432")
+print "Opened DVD Rental Database Successfully"
+
+cur = conn.cursor()
+cur.execute('''CREATE TABLE EMPLOYEES
+       (ID INT PRIMARY KEY     NOT NULL,
+       NAME           TEXT    NOT NULL,
+       AGE            INT     NOT NULL,
+       ADDRESS        CHAR(50),
+       SALARY         REAL);''')
+print "Table created successfully"
+
+conn.commit()
+conn.close()
+
+cur = conn.cursor()
+cur.execute('''CREATE TABLE EMPLOYEES
+       (ID INT PRIMARY KEY     NOT NULL,
+       NAME           TEXT    NOT NULL,
+       AGE            INT     NOT NULL,
+       ADDRESS        CHAR(50),
+       SALARY         REAL);''')
+print "Table created successfully"
+conn.commit()
+conn.close()
+
+
+
+
+RECIPE: Inserting records using Python
+
+#!/usr/bin/python
+
+import psycopg2
+
+conn = psycopg2.connect(database="dvdrental", user="postgres", password="postgres", host="127.0.0.1", port="5432")
+print "Opened database successfully"
+
+cur = conn.cursor()
+
+cur.execute("INSERT INTO EMPLOYEES (ID,NAME,AGE,ADDRESS,SALARY) \
+      VALUES (1, 'SandeepSingh', 39, 'Saharanpur', 90000.00 )");
+
+cur.execute("INSERT INTO EMPLOYEES (ID,NAME,AGE,ADDRESS,SALARY) \
+      VALUES (2, 'NeerajKumar', 42, 'Rohtak', 90000.00 )");
+
+cur.execute("INSERT INTO EMPLOYEES (ID,NAME,AGE,ADDRESS,SALARY) \
+      VALUES (3, 'AmitGovil', 37, 'Aligarh', 88000.00 )");
+
+cur.execute("INSERT INTO EMPLOYEES (ID,NAME,AGE,ADDRESS,SALARY) \
+      VALUES (4, 'SandeepSharma', 36, 'Haridwar ', 75000.00 )");
+
+conn.commit()
+print "Records created successfully in EMPLOYEES Table";
+conn.close()
+
+bash-3.2$ python insert.py
+
+cur = conn.cursor()
+cur.execute("INSERT INTO EMPLOYEES (ID,NAME,AGE,ADDRESS,SALARY) \
+      VALUES (1, 'SandeepSingh', 39, 'Saharanpur', 90000.00 )");
+
+
+
+
+RECIPE: Accessing data using Python
+
+#!/usr/bin/python
+
+import psycopg2
+
+conn = psycopg2.connect(database="dvdrental", user="postgres", password="postgres", host="127.0.0.1", port="5432")
+print "Opened database successfully"
+
+cur = conn.cursor()
+
+cur.execute("SELECT id, name, address, salary  from EMPLOYEES")
+rows = cur.fetchall()
+for row in rows:
+   print "ID = ", row[0]
+   print "NAME = ", row[1]
+   print "ADDRESS = ", row[2]
+   print "SALARY = ", row[3], "\n"
+
+print "Select Operation done successfully";
+conn.close()
+
+bash-3.2$ python select.py
+
+cur.execute("SELECT id, name, address, salary  from EMPLOYEES")
+rows = cur.fetchall()
+for row in rows:
+   print "ID = ", row[0]
+   print "NAME = ", row[1]
+   print "ADDRESS = ", row[2]
+   print "SALARY = ", row[3], "\n"
+
+print "Select Operation done successfully";
+conn.close()
+
+
+
+
+RECIPE: Updating records using Python
+
+dvdrental=# select * from employees;
+
+#!/usr/bin/python
+
+import psycopg2
+
+conn = psycopg2.connect(database="dvdrental", user="postgres", password="postgres", host="127.0.0.1", port="5432")
+print "Opened database successfully"
+
+cur = conn.cursor()
+
+cur.execute("UPDATE EMPLOYEES SET  SALARY = 105000.00 WHERE ID=1")
+conn.commit()
+print "Total number of rows updated :", cur.rowcount
+
+cur.execute("SELECT id, name, address, salary  FROM  EMPLOYEES")
+rows = cur.fetchall()
+for row in rows:
+   print "ID = ", row[0]
+   print "NAME = ", row[1]
+   print "ADDRESS = ", row[2]
+   print "SALARY = ", row[3], "\n"
+
+print "Update Operation done successfully";
+conn.close()
+
+--bash-3.2$ python update.py
+
+cur = conn.cursor()
+
+cur.execute("UPDATE EMPLOYEES set SALARY = 105000.00 where ID=1")
+conn.commit()
+print "Total number of rows updated :", cur.rowcount
+
+
+
+
+RECIPE: Deleting records using Python
+
+dvdrental=# select * from employees;
+
+#!/usr/bin/python
+
+import psycopg2
+
+conn = psycopg2.connect(database="dvdrental", user="postgres", password="postgres", host="127.0.0.1", port="5432")
+print "Opened database successfully"
+
+cur = conn.cursor()
+
+cur.execute("DELETE from EMPLOYEES where ID=2;")
+conn.commit()
+print "Total number of rows deleted :", cur.rowcount
+
+cur.execute("SELECT id, name, address, salary  from EMPLOYEES")
+rows = cur.fetchall()
+for row in rows:
+   print "ID = ", row[0]
+   print "NAME = ", row[1]
+   print "ADDRESS = ", row[2]
+   print "SALARY = ", row[3], "\n"
+
+print "DELETE Operation done successfully";
+conn.close()
+
+bash-3.2$ python delete.py
+
+cur = conn.cursor()
+
+cur.execute("DELETE from EMPLOYEES where ID=2;")
+conn.commit()
+print "Total number of rows deleted :", cur.rowcount

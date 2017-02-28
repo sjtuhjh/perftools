@@ -1,0 +1,50 @@
+--
+-- PostgreSQL Administration Cookbook
+-- 	Simon Riggs & Hannu Krosing
+
+--
+-- Chapter 7: Database Administration
+--
+-- You can run this using
+-- 		psql -f chapter7.txt
+--
+
+CREATE OR REPLACE VIEW user_tablespace_objects AS
+SELECT		spcname
+			,relname
+			,CASE WHEN relistemp THEN 'temp ' ELSE '' END ||
+			 CASE 
+			 	WHEN relkind = 'r' THEN  'table' 
+			 	WHEN relkind = 'v' THEN  'view' 
+			 	WHEN relkind = 'S' THEN  'sequence' 
+			 	WHEN relkind = 'c' THEN  'type' 
+			 ELSE 'index' END 				as objtype
+FROM	 pg_class c join pg_tablespace ts 
+ON		 (CASE WHEN c.reltablespace = 0 THEN (SELECT dattablespace FROM pg_database WHERE datname = current_database())
+		 ELSE c.reltablespace END) = ts.oid
+WHERE  	relname NOT LIKE 'pg_toast%'
+AND		relnamespace NOT IN (SELECT oid FROM pg_namespace WHERE nspname IN ('pg_catalog', 'information_schema'))
+;
+--SELECT * FROM user_tablespace_objects;
+
+CREATE OR REPLACE VIEW indexes_not_stored_with_tables AS
+SELECT	 i.relname as indexname
+			,tsi.spcname AS index_spcname
+			,t.relname as tablename
+			,tst.spcname AS table_spcname
+
+FROM	(((pg_class t 		/* tables */
+		JOIN pg_tablespace tst 
+		ON	t.reltablespace = tst.oid)
+		JOIN pg_index pgi
+		ON pgi.indrelid = t.oid)
+		JOIN pg_class i 	/* indexes */
+		ON	pgi.indexrelid = i.oid)
+		JOIN pg_tablespace tsi 
+		ON	i.reltablespace = tsi.oid
+
+WHERE  	i.relname NOT LIKE 'pg_toast%' 
+AND		i.reltablespace != t.reltablespace
+;
+--SELECT * FROM indexes_not_stored_with_tables;
+

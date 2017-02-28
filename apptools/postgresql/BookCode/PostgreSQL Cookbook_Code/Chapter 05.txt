@@ -1,0 +1,83 @@
+﻿RECIPE: Monitoring CPU usage
+
+bash-3.2$ sar -u 10 8
+
+
+
+
+RECIPE: Monitoring paging and swapping
+
+bash$ vmstat –S
+
+bash-3.2$ sar -p 5 4
+
+bash-3.2$ sar -w 5 4
+
+
+
+
+RECIPE: Finding the worst user on the system
+
+bash-3.2$top
+
+
+
+
+RECIPE: Monitoring system load
+
+bash-3.2$ uptime
+
+
+
+
+RECIPE: Identifying CPU bottlenecks
+
+bash-3.2$ mpstat 1 1
+
+
+
+
+RECIPE: Identifying disk I/O bottlenecks
+
+bash-3.2$iostat -d 5 5
+
+bash-3.2$ iostat -D 5 5
+
+bash-3.2$ iostat -x
+
+
+
+
+RECIPE: Monitoring system performance
+
+$ vmstat
+
+
+
+
+RECIPE: Examining historical CPU load
+
+$ sar -u -f /var/log/sa/sa08
+
+
+
+
+RECIPE: Examining historical memory load
+
+$ sar -B -f /var/log/sa/sa05
+
+$ sar -W -f /var/log/sa/sa05
+
+
+
+
+RECIPE: Monitoring disk space usage
+
+bash-3.2$ df -h
+
+
+
+
+RECIPE: Monitoring network status
+
+bash-3.2$ netstat -i

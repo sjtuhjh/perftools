@@ -1,0 +1,145 @@
+RECIPE: A logical backup of a single PostgreSQL database
+
+pg_dump -U postgres -W -F t dvdrental > /home/abcd/dvdrental.tar
+
+pg_dump -u postgres -h 192.168.16.54 -F c -f dvdrental.sql.tar.gz dvdrental
+
+
+
+
+RECIPE: A logical backup of all PostgreSQL databases
+
+pg_dumpall -g
+
+pg_dumpall -U postgres > c:\pgbackup\all.sql
+
+pg_dumpall -U postgres > /home/pgbackup/all.sql
+
+pg_dumpall --schema-only > c:\pgdump\definitiononly.sql
+
+pg_dumpall --roles-only > c:\pgdump\myroles.sql
+
+pg_dumpall --tablespaces-only > c:\pgdump\mytablespaces.sql
+
+
+
+
+RECIPE: A logical backup of specific objects
+
+pg_dump -h localhost -p 5432 -U agovil -F c -b -v -f "C:\pgbak\testdb_test.backup" -t case.test postgres
+
+SELECT 'pg_dump' UNION ALL
+SELECT '-t ' || spcname || '.' || relname FROM pg_class t
+JOIN pg_tablespace ts
+ON reltablespace = ts.oid AND spcname = :TSNAME
+JOIN pg_namespace n ON n.oid = t.relnamespace
+WHERE relkind = 'r'
+UNION ALL
+SELECT '-F c > dumpfile'; -- dumpfile is the name of the
+output file
+
+psql -t -v TSNAME="'my_tablespace'" -f table_tablespace_dump.sql > myts
+
+chmod 700 myts
+./myts
+
+SELECT 'pg_dump ' || ' -h localhost -p 5432 -U postgres  -F c -b -v -f "/pgbak/dvdrental_keytbls.backup" ' || array_to_string(ARRAY(SELECT '-t ' || table_schema || '.' || table_name  FROM information_schema.tables
+WHERE table_name LIKE '%_rent' AND table_schema NOT IN('pg_catalog','public' )  ), ' ') || ' dvdrental';
+
+SELECT 'pg_dump ' || ' -h localhost -p 5432 -U postgres  -F c -b -v -f "C:/pgbak/dvdrental_changed_keytbls.backup" ' || array_to_string(ARRAY(SELECT '-t ' || schemaname || '.' || relname FROM pg_stat_user_tables
+WHERE last_autoanalyze > ( CURRENT_TIMESTAMP - (INTERVAL '1 day') )  )   , ' ') || ' dvdrental';
+
+
+
+
+RECIPE: File system level backup
+
+tar -cvf backup.tar /home/abcd/psql/data
+
+postgres=# CHECKPOINT ;
+
+lvcreate -l 100%FREE -s -n snap VG_POSTGRES/RV_DATA
+
+mkdir /mnt/pg_snap
+
+mount -t xfs -o nouuid /dev/VG_POSTGRES/snap /mnt/pg_snap
+
+cd /mnt/pg_snap/
+
+tar –czvf /backup/ pgsql.$(date +"%m-%d%-%Y).tar.gz /mnt/pg_snap/
+
+umount /mnt/pg_snap
+lvremove VG_POSTGRES/snap
+
+
+
+
+RECIPE: Taking a base backup
+
+$ pg_basebackup -h 192.168.10.14 -D /home/abcd/pgsql/data
+
+
+
+
+RECIPE: Hot physical backup and continuous archiving
+
+wal_level = hot_standby
+archive_mode = on
+archive_command = 'test ! -f
+/home/abcd/pgsql/backup_in_progress || (test ! -f
+/home/abcd/pgsql/archive/%f && cp %p
+/home/abcd/pgsql/archive/%f)'
+
+pg_ctl -d $PGDATA stop
+pg_ctl -d $PGDATA start
+
+mkdir –p /home/abcd/pgsql/archive/
+touch /home/abcd/pgsql/backup_in_progress
+
+psql -c "select pg_start_backup('hot_backup');"
+
+tar -cvf /home/abcd/pgsql/backup.tar /home/abcd/pgsql/data
+
+psql -c "select pg_stop_backup();"
+
+cd /home/abcd/pgsql/archive
+
+[postgres@localhost archive]$ ls -ltrh
+
+
+
+
+RECIPE: Point-in-time recovery
+
+pg_ctl -d $PGDATA stop
+
+mv $PGDATA /tmp
+
+tar -xvf /home/abcd/pgsql/backup.tar
+
+rm -rf /home/abcd/pgsql/data/pg_xlog/*
+
+cp /home/abcd/pgsql/share/recovery.conf.sample $PGDATA
+cd $PGDATA
+mv recovery.conf.sample recovery.conf
+
+restore_command = 'cp /home/abcd/pgsql/archive/%f %p'
+
+pg_ctl -D $PGDATA start
+
+[postgres@localhost data]$ ls -ltrh |tail -7
+
+
+
+
+RECIPE: Restoring databases and specifi c database objects
+
+psql -U postgres -f c:\pgbackup\all.sql
+
+pg_restore --dbname=dvdrental --create --verbose /home/abcd/dvdrental.tar
+
+dvdrental#drop table store cascade;
+
+pg_restore -t store dvdrental.tar > droppedtable.sql
+
+psql -f droppedtable.sql dvdrental

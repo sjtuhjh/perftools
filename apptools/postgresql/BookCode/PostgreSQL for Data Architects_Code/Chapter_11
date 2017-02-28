@@ -1,0 +1,55 @@
+ps aux | grep postgres
+ss -anp | grep postgres
+# psql
+SHOW port;
+SHOW listen_addresses;
+
+# shell
+pg_ctl reload
+
+#psql
+\d pgp
+CREATE TABLE "Mytb" ( id INTEGER);
+SELECT * FROM Mytb;
+SELECT * FROM "Mytb";
+
+\dp+ "Mytb";
+SELECT pg_reload_conf();
+SELECT DISTINCT context FROM pg_settings;
+SELECT name, context FROM pg_settings WHERE name
+IN ( 'archive_command','port');
+SHOW config_file;
+
+\c pgp
+SET application_name = 'lockingclient';
+BEGIN;
+SELECT * FROM myt FOR UPDATE;
+
+	# session2
+	\c pgp
+	SET application_name = 'waitingclient';
+	SELECT * FROM myt FOR UPDATE;
+
+# session3
+\c pgp
+SELECT pl.locktype, pl.mode, pc.relname,pl.pid , psa.state,
+psa.query
+FROM pg_locks pl JOIN pg_class pc ON pl.relation=pc.oid
+JOIN pg_stat_activity psa ON pl.pid=psa.pid
+WHERE relname='myt';
+
+SELECT waiting1.pid AS waiting_pid,
+waiting2.usename AS waiting_user,
+waiting2.query AS waiting_statement,
+blocking1.pid AS blocking_pid,
+blocking2.usename AS blocking_user,
+blocking2.query AS blocking_statement
+FROM pg_locks waiting1
+JOIN pg_stat_activity waiting2 ON
+waiting1.pid = waiting2.pid
+JOIN pg_locks blocking1 ON
+waiting1.transactionid = blocking1.transactionid
+AND waiting1.pid != blocking1.pid
+JOIN pg_stat_activity blocking2 ON
+blocking1.pid = blocking2.pid
+WHERE NOT waiting1.granted;

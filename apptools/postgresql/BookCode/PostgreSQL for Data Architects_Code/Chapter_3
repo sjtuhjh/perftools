@@ -1,0 +1,86 @@
+cd /pgdata/9.3/pg_tblspc
+chown postgres /pgdata
+mkdir /pgdata/tbl1
+CREATE TABLESPACE mytablespace LOCATION '/pgdata/tbl1';
+\! ls -l
+DROP TABLE IF EXISTS emp;
+DROP TABLE IF EXISTS dept;
+CREATE TABLE emp(id int, first_name text);
+CREATE TABLE dept (id int, dept_name text) tablespace mytablespace;
+\! oid2name -d test
+\! find /pgdata -type f \( -name 24655 -o -name 24649 \)
+SELECT tablename, tablespace FROM pg_tables WHERE tablename IN
+('emp','dept');
+ALTER DATABASE test SET default_tablespace='mytablespace';
+CREATE USER myuser;
+CREATE TEMPORARY TABLE mytemp (id int);
+SELECT relname,relnamespace,pn.oid, pn.nspname FROM
+pg_class pc JOIN pg_namespace pn ON
+pc.relnamespace=pn.oid where relname IN ('mytemp','emp');
+mkdir /pgdata/tmptblsp
+CREATE TABLESPACE mytmptblspc LOCATION '/pgdata/tmptblsp';
+SET temp_tablespaces='mytmptblspc';
+CREATE TEMPORARY TABLE mynewtbl(id int);
+SELECT tablename, tablespace FROM pg_tables
+WHERE tablename ='mynewtbl';
+CREATE UNLOGGED TABLE myunloggedtbl(id int);
+SELECT schemaname, tablename FROM pg_tables WHERE tablename
+IN('emp','dept');
+CREATE SCHEMA mynewschema;
+CREATE TABLE mynewschema.emp (id integer, first_name text);
+CREATE TABLE mynewschema.emp1 (id integer);
+INSERT INTO emp1(id) VALUES(1);
+SELECT current_schema;
+SELECT current_schemas(true);
+SHOW search_path;
+SET search_path="$user",public,mynewschema;
+SHOW search_path;
+INSERT INTO emp1(id) VALUES(1);
+INSERT INTO emp(id, first_name) VALUES (1,'OldOne');
+SET search_path="$user",mynewschema, public;
+SELECT * FROM emp;
+SET search_path=mynewschema, "$user", public;
+CREATE TABLE dept( id integer, dept_name text);
+SELECT tablename, schemaname FROM pg_tables WHERE tablename =
+'dept';
+grep search_path postgresql.conf
+SHOW search_path;
+SET SCHEMA 'mynewschema';
+SHOW search_path;
+ALTER USER myuser SET search_path=mynewschema;
+psql -U myuser -d test
+SHOW search_path;
+CREATE USER my_user;
+CREATE ROLE my_role;
+psql -U my_user -d postgres
+\q
+psql -U my_role -d postgres
+psql
+ALTER ROLE my_role WITH login;
+\q
+psql -U my_role -d postgres
+\q
+\du+
+ALTER USER my_user WITH superuser;
+\du+
+
+psql -U my_role -d test
+SELECT current_user;
+\d emp
+SELECT * FROM emp;
+GRANT ALL ON emp TO my_user;
+GRANT SELECT ON emp TO my_role;
+GRANT INSERT ON emp TO myuser;
+\dp+ emp;
+
+SELECT pu.usename , pc.tbl, pc.privilege_type
+FROM pg_user pu JOIN (
+SELECT oid::regclass tbl, (aclexplode(relacl)).grantee,
+(aclexplode(relacl)).privilege_type FROM pg_class
+WHERE
+relname='emp'
+) pc ON pc.grantee=pu.usesysid;
+
+
+
+

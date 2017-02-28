@@ -1,0 +1,278 @@
+RECIPE: Making a connection to a PostgreSQL database using Perl
+
+yum install perl-DBD-Pg
+
+apt-get install libdbd-pg-perl
+
+$ pg_ctl -D $PGDATA restart
+
+#!/usr/bin/perl
+
+use DBI;
+use strict;
+   my $driver   = "Pg"; 
+my $database = "dvdrental";
+my $dsn = "DBI:$driver:dbname=$database;host=127.0.0.1;port=5432";
+my $userid = "postgres";
+my $password = "postgres";
+my $dbh = DBI->connect($dsn, $userid, $password, { RaiseError => 1 }) 
+                      or die $DBI::errstr;
+
+print "CONNECTION TO THE  DVDRENTAL DATABASE MADE SUCCESSFULLY\n";
+
+chmod 755 connect.pl
+
+bash-3.2$ perl connect.pl
+
+my $dbh = DBI->connect($dsn, $userid, $password, { RaiseError => 1 })
+
+my $dsn = "DBI:$driver:dbname=$database;host=127.0.0.1;port=5432";
+
+
+
+
+RECIPE: Creating tables using Perl
+
+#!/usr/bin/perl
+
+use DBI;
+use strict;
+
+my $driver   = "Pg"; 
+my $database = "dvdrental";
+my $dsn = "DBI:$driver:dbname=$database;host=127.0.0.1;port=5432";
+my $userid = "postgres";
+my $password = "postgres";
+my $dbh = DBI->connect($dsn, $userid, $password, { RaiseError => 1 })
+                      or die $DBI::errstr;
+print "Dvdrental database opened \n";
+
+my $stmt = qq(CREATE TABLE EMPLOYEES
+      (ID INT PRIMARY KEY     NOT NULL,
+       NAME           TEXT    NOT NULL,
+       AGE            INT     NOT NULL,
+       ADDRESS        CHAR(60),
+       SALARY         REAL););
+my $rv = $dbh->do($stmt);  
+ print "EMPLOYEES table created successfully\n\n";
+
+$dbh->disconnect();
+
+bash-3.2$ perl createtable.pl
+
+my $rv = $dbh->do($stmt);
+
+my $stmt = qq(CREATE TABLE EMPLOYEES
+      (ID INT PRIMARY KEY     NOT NULL,
+       NAME           TEXT    NOT NULL,
+       AGE            INT     NOT NULL,
+       ADDRESS        CHAR(60),
+
+       SALARY         REAL););   
+	   
+	   
+
+
+RECIPE: Inserting records using Perl
+
+#!/usr/bin/perl
+
+use DBI;
+use strict;
+
+my $driver   = "Pg"; 
+my $database = "dvdrental";
+my $dsn = "DBI:$driver:dbname=$database;host=127.0.0.1;port=5432";
+my $userid = "postgres";
+my $password = "postgres";
+my $irows = 0;
+my $dbh = DBI->connect($dsn, $userid, $password, { RaiseError => 1 })
+                      or die $DBI::errstr;
+print "Opened database successfully\n";
+
+my $stmt = qq(INSERT INTO EMPLOYEES (ID,NAME,AGE,ADDRESS,SALARY)
+      VALUES (5, 'SandeepSingh', 37, 'Saharanpur', 90000.00 ));
+my $rv = $dbh->do($stmt);
+
+
+$irows = $rv + $irows;
+
+$stmt = qq(INSERT INTO EMPLOYEES (ID,NAME,AGE,ADDRESS,SALARY)
+      VALUES (6, 'AmitGovil', 37, 'Aligarh', 85000.00 ));
+$rv = $dbh->do($stmt);
+
+
+$irows = $rv + $irows;
+
+$stmt = qq(INSERT INTO EMPLOYEES (ID,NAME,AGE,ADDRESS,SALARY)
+      VALUES (7, 'NeerajKumar', 38, 'Rohtak', 90000.00 ));
+$rv = $dbh->do($stmt);
+
+
+$irows = $rv + $irows;
+
+$stmt = qq(INSERT INTO EMPLOYEES (ID,NAME,AGE,ADDRESS,SALARY)
+      VALUES (8, 'SandeepSharma', 36, 'Gurgaon ', 75000.00 ););
+$rv = $dbh->do($stmt); 
+
+
+$irows = $rv + $irows;
+
+print "Number of rows inserted : $irows\n";
+print "New Records created successfully\n";
+$dbh->disconnect();
+
+bash-3.2$ perl  insert.pl
+
+my $stmt = qq(INSERT INTO EMPLOYEES (ID,NAME,AGE,ADDRESS,SALARY)
+      VALUES (5, 'SandeepSingh', 37, 'Saharanpur', 90000.00 ));
+my $rv = $dbh->do($stmt);
+
+$irows = $rv + $irows;
+
+
+
+
+RECIPE: Accessing data using Perl
+
+#!/usr/bin/perl
+
+use DBI;
+use strict;
+
+my $driver   = "Pg"; 
+my $database = "dvdrental;";
+my $dsn = "DBI:$driver:dbname=$database;host=127.0.0.1;port=5432";
+my $userid = "postgres";
+my $password = "postgres";
+my $dbh = DBI->connect($dsn, $userid, $password, { RaiseError => 1 })
+                      or die $DBI::errstr;
+print "Opened database successfully\n";
+
+my $stmt = qq(SELECT id, name, address, salary  from EMPLOYEES;);
+my $sth = $dbh->prepare($stmt) or die "Cannot prepare: " . $dbh->errstr();
+
+my $rv = $sth->execute() or die "Cannot execute: " . $sth->errstr();
+
+while(my @row = $sth->fetchrow_array()) {
+      print "ID = ". $row[0] . "\n";
+      print "NAME = ". $row[1] ."\n";
+      print "ADDRESS = ". $row[2] ."\n";
+      print "SALARY =  ". $row[3] ."\n\n";
+}
+$sth->finish();
+print "select Operation done successfully\n";
+$dbh->disconnect();
+
+bash-3.2$ perl select.pl
+
+my $stmt = qq(SELECT id, name, address, salary  from EMPLOYEES;);
+my $sth = $dbh->prepare( $stmt ) or die "Cannot prepare: " . $dbh->errstr();
+
+my $rv = $sth->execute() or die "Cannot prepare: " . $dbh->errstr();
+
+
+
+while(my @row = $sth->fetchrow_array()) {
+      print "ID = ". $row[0] . "\n";
+      print "NAME = ". $row[1] ."\n";
+      print "ADDRESS = ". $row[2] ."\n";
+      print "SALARY =  ". $row[3] ."\n\n";
+}
+ $sth->finish();
+
+
+
+
+RECIPE: Updating records using Perl
+
+dvdrental=# select * from EMPLOYEES;
+
+#!/usr/bin/perl
+
+use DBI;
+use strict;
+
+my $driver   = "Pg"; 
+my $database = "dvdrental";
+my $dsn = "DBI:$driver:dbname=$database;host=127.0.0.1;port=5432";
+my $userid = "postgres";
+my $password = "postgres";
+my $dbh = DBI->connect($dsn, $userid, $password, { RaiseError => 1 })
+                      or die $DBI::errstr;
+print "Opened database successfully\n";
+
+my $stmt = qq(UPDATE EMPLOYEES set SALARY = 55000.00 where ID=5;);
+my $rv = $dbh->do($stmt); 
+   print "Number of rows updated : $rv\n";
+
+
+$stmt = qq(SELECT id, name, address, salary  from EMPLOYEES;);
+my $sth = $dbh->prepare( $stmt ) or die "Check again: " . $dbh->errstr();
+
+$rv = $sth->execute() or die "Cannot execute: " . $sth->errstr();
+
+
+while(my @row = $sth->fetchrow_array()) {
+      print "ID = ". $row[0] . "\n";
+      print "NAME = ". $row[1] ."\n";
+      print "ADDRESS = ". $row[2] ."\n";
+      print "SALARY =  ". $row[3] ."\n\n";
+}
+$sth->finish();
+print "Operation Completed successfully\n";
+$dbh->disconnect();
+
+bash-3.2$ perl update.pl
+
+my $stmt = qq(UPDATE EMPLOYEES set SALARY = 55000.00 where ID=5;);
+my $rv = $dbh->do($stmt);
+   print "Number of rows updated : $rv\n";
+
+
+
+
+RECIPE: Deleting records using Perl
+
+dvdrental=# select * from EMPLOYEES;
+
+#!/usr/bin/perl
+
+use DBI;
+use strict;
+
+my $driver   = "Pg"; 
+my $database = "dvdrental";
+my $dsn = "DBI:$driver:dbname=$database;host=127.0.0.1;port=5432";
+my $userid = "postgres";
+my $password = "postgres";
+my $dbh = DBI->connect($dsn, $userid, $password, { RaiseError => 1 })
+                      or die $DBI::errstr;
+print "Opened database successfully\n";
+
+my $stmt = qq(DELETE from EMPLOYEES where ID=6;);
+my $rv = $dbh->do($stmt);
+   print "Number of rows deleted : $rv\n";
+
+
+$stmt = qq(SELECT id, name, address, salary  from EMPLOYEES;);
+my $sth = $dbh->prepare( $stmt ) or die "Cannot prepare: " . $dbh->errstr();
+
+$rv = $sth->execute() or die "Cannot execute: " . $sth->errstr();
+
+
+while(my @row = $sth->fetchrow_array()) {
+      print "ID = ". $row[0] . "\n";
+      print "NAME = ". $row[1] ."\n";
+      print "ADDRESS = ". $row[2] ."\n";
+      print "SALARY =  ". $row[3] ."\n\n";
+}
+$sth->finish();
+print "Operation done successfully\n";
+$dbh->disconnect();
+
+bash-3.2$ perl delete.pl
+
+my $stmt = qq(DELETE from EMPLOYEES where ID=6;);
+my $rv = $dbh->do($stmt);
+   print "Number of rows deleted : $rv\n";

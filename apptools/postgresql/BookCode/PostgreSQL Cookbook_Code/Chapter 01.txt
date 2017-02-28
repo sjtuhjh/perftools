@@ -1,0 +1,193 @@
+RECIPE: Creating databases
+
+psql -h localhost -d postgres –p 5432
+
+CREATE USER hr with PASSWORD 'hr';
+
+CREATE DATABASE hrdb WITH ENCODING='UTF8' OWNER=hr
+CONNECTION LIMIT=25;
+
+createdb –h localhost –p 5432 –U postgres testdb1
+
+postgres=# SELECT datname from pg_database WHERE datistemplate = false;
+
+
+
+
+
+RECIPE: Creating schemas
+
+CREATE SCHEMA employee;
+
+CREATE SCHEMA university AUTHORIZATION bob;
+
+postgres=# \dn
+
+SELECT current_schema();
+
+ALTER DATABASE hrd SET search_path TO hr,hrms, public, pg_catalog;
+
+
+
+
+
+RECIPE: Creating users
+
+CREATE user agovil WITH PASSWORD 'Kh@rt0um';
+
+$ createuser -h localhost -p 5432 -S nchabbra
+
+postgres=# \du
+
+postgres=# SELECT u.usename AS "User name", u.usesysid AS "User ID", CASE WHEN u.usesuper AND u.usecreatedb THEN CAST('superuser, create database' AS pg_catalog.text) WHEN u.usesuper THEN CAST('superuser' AS pg_catalog.text) WHEN u.usecreatedb THEN CAST('create database' AS pg_catalog.text) ELSE CAST('' AS pg_catalog.text) END AS "Attributes" FROM pg_catalog.pg_user u ORDER BY 1;
+
+
+
+
+RECIPE: Creating groups
+
+hrdb=# CREATE GROUP dept;
+
+hrdb=# ALTER GROUP dept ADD USER agovil,nchabbra;
+
+hrdb=# CREATE GROUP admins WITH user agovil,nchabbra;
+
+hrdb=# SELECT * FROM pg_group;
+
+
+
+
+
+RECIPE: Destroying databases
+
+hrdb=# DROP DATABASE hrdb;
+
+$ dropdb hrdb;
+
+SELECT * from pg_stat_activity where datname='testdb1';
+
+SELECT pg_terminate_backend(pid) FROM pg_stat_activity 
+WHERE datname = 'testdb1';
+
+
+
+
+
+RECIPE: Creating and dropping tablespaces
+
+mkdir –p /var/lib/pgsql/data/dbs
+
+CREATE TABLESPACE data_tbs OWNER agovil
+LOCATION '/var/lib/pgsql/data/dbs';
+
+DROP TABLESPACE data_tbs;
+
+postgres=# SELECT * FROM pg_tablespace;
+
+
+
+
+
+RECIPE: Moving objects between tablespaces
+
+mkdir –p /var/lib/pgsql/data/hrms
+
+CREATE TABLESPACE HRMS OWNER agovil
+LOCATION '/var/lib/pgsql/data/hrms';
+
+CREATE TABLE EMPLOYEES(id integer PRIMARY KEY , name varchar(40));
+INSERT INTO EMPLOYEES VALUES (1, 'Mike Johansson');
+INSERT INTO EMPLOYEES VALUES(2, 'Rajat Arora');
+CREATE INDEX emp_idx on employees(name);
+
+ALTER DATABASE testdb1 SET default_tablespace='hrms';
+
+ALTER TABLE employee SET TABLESPACE hrms;
+
+ALTER INDEX emp_idx SET TABLESPACE hrms;
+
+
+
+
+
+RECIPE: Initializing a database cluster
+
+$ initdb -D /var/lib/pgsql/data
+
+$ pg_ctl -D /var/lib/pgsql/data initdb
+
+
+
+
+
+RECIPE: Starting the server
+
+pg_ctl -D /var/lib/pgsql/data start
+
+service postgresql-9.3 start
+
+/etc/rc.d/init.d/postgresql-9.3 start
+
+NET START postgresql-9.3
+
+
+
+
+
+RECIPE: Stopping the server
+
+pg_ctl -D /var/lib/pgsql/data stop -m fast
+
+service postgresql stop
+
+/etc/rc.d/init.d/postgresql stop
+
+NET STOP postgresql-9.3
+
+pg_ctl -D /var/lib/pgsql/data stop -m immediate
+
+$ kill -INT head -1 /usr/local/pgsql/data/postmaster.pid
+
+
+
+
+RECIPE: Displaying the server status
+
+pg_ctl -D /var/lib/pgsql/data status
+
+service postgresql status
+
+/etc/rc.d/init.d/postgresql status
+
+
+
+
+RECIPE: Reloading the server confi guration fi les
+
+pg_ctl -D /var/lib/pgsql/data reload
+
+postgres=# select pg_reload_conf();
+
+service postgresql reload
+
+SELECT name, setting, unit ,(source = 'default') as is_default 
+FROM pg_settings WHERE context = 'sighup'
+AND (name like '%delay' or name like '%timeout')
+AND setting != '0';
+
+
+
+
+RECIPE: Terminating connections
+
+SELECT pg_terminate_backend(pid) FROM pg_stat_activity
+WHERE datname = 'testdb1';
+
+SELECT pg_terminate_backend(pid) FROM pg_stat_activity
+WHERE usename = 'agovil';
+
+SELECT pg_cancel_backend(pid) FROM pg_stat_activity
+WHERE datname = 'testdb1';
+
+SELECT pg_cancel_backend(pid) FROM pg_stat_activity
+WHERE usename = 'agovil';
