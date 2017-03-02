@@ -1,0 +1,95 @@
+hash: 2ff7c989fb0fde1375999fded74ae44e10be513a21416571f026390b679924e4
+updated: 2017-02-18T14:28:15.401069352-05:00
+imports:
+- name: github.com/Bowery/prompt
+  version: 69c5e25541f5afcb0981e274ee60bc06a89c1c83
+- name: github.com/bradfitz/slice
+  version: d9036e2120b5ddfa53f3ebccd618c4af275f47da
+- name: github.com/codegangsta/cli
+  version: 2526b57c56f30b50466c96c4133b1a4ad0f0191f
+- name: github.com/dchest/safefile
+  version: 855e8d98f1852d48dde521e0522408d1fe7e836a
+- name: github.com/go-ole/go-ole
+  version: de8695c8edbf8236f30d6e1376e20b198a028d42
+  subpackages:
+  - oleutil
+- name: github.com/golang/mock
+  version: bd3c8e81be01eef76d4b503f5e687d2d1354d2d9
+  subpackages:
+  - gomock
+- name: github.com/google/shlex
+  version: 6f45313302b9c56850fc17f99e40caebce98c716
+- name: github.com/hashicorp/go-version
+  version: 03c5bf6be031b6dd45afec16b1cf94fc8938bc77
+- name: github.com/howeyc/gopass
+  version: bf9dde6d0d2c004a008c27aaee91170c786f6db8
+- name: github.com/kr/pretty
+  version: cfb55aafdaf3ec08f0db22699ab822c50091b1c4
+- name: github.com/kr/text
+  version: 7cafcd837844e784b526369c9bce262804aebc60
+- name: github.com/Masterminds/semver
+  version: 59c29afe1a994eacb71c833025ca7acf874bb1da
+- name: github.com/Masterminds/vcs
+  version: abd1ea7037d3652ef9833a164b627f49225e1131
+- name: github.com/mitchellh/go-homedir
+  version: b8bc1bf767474819792c23f32d8286a45736f1c6
+- name: github.com/montanaflynn/stats
+  version: eeaced052adbcfeea372c749c281099ed7fdaa38
+- name: github.com/pborman/getopt
+  version: 7148bc3a4c3008adfcab60cbebfd0576018f330b
+- name: github.com/percona/pmgo
+  version: 27d979df6c6885ff16abe375aead061a86da6df8
+  subpackages:
+  - pmgomock
+- name: github.com/pkg/errors
+  version: 645ef00459ed84a119197bfb8d8205042c6df63d
+- name: github.com/satori/go.uuid
+  version: 879c5887cd475cd7864858769793b2ceb0d44feb
+- name: github.com/shirou/gopsutil
+  version: 70a1b78fe69202d93d6718fc9e3a4d6f81edfd58
+  subpackages:
+  - cpu
+  - host
+  - internal/common
+  - mem
+  - net
+  - process
+- name: github.com/shirou/w32
+  version: bb4de0191aa41b5507caa14b0650cdbddcd9280b
+- name: github.com/sirupsen/logrus
+  version: c078b1e43f58d563c74cebe63c85789e76ddb627
+- name: github.com/StackExchange/wmi
+  version: e542ed97d15e640bdc14b5c12162d59e8fc67324
+- name: go4.org
+  version: 7ce08ca145dbe0e66a127c447b80ee7914f3e4f9
+  subpackages:
+  - reflectutil
+- name: golang.org/x/crypto
+  version: 453249f01cfeb54c3d549ddb75ff152ca243f9d8
+  subpackages:
+  - ssh/terminal
+- name: golang.org/x/net
+  version: 6b27048ae5e6ad1ef927e72e437531493de612fe
+  subpackages:
+  - context
+- name: golang.org/x/sys
+  version: 075e574b89e4c2d22f2286a7e2b919519c6f3547
+  subpackages:
+  - unix
+- name: golang.org/x/tools
+  version: 8e779ee0a4509783f6940db32d1a4e8df910cc8b
+  subpackages:
+  - go/vcs
+- name: gopkg.in/mgo.v2
+  version: 3f83fa5005286a7fe593b055f0d7771a7dce4655
+  subpackages:
+  - bson
+  - dbtest
+  - internal/json
+  - internal/sasl
+  - internal/scram
+- name: gopkg.in/tomb.v2
+  version: d5d1b5820637886def9eef33e03a27a9f166942c
+- name: gopkg.in/yaml.v2
+  version: a3f3340b5840cee44f372bddb5880fcbc419b46a
+testImports: []
