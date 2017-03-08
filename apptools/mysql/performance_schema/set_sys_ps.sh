@@ -2,11 +2,11 @@
 
 #One tool to display mysql performance schema informations
 
-user=root
+user=mysql
 password="123456"
-mysql="/u01/my3306/bin/mysql"
+mysql="/usr/local/mariadb/bin/mysql"
 port="3306"
-ipaddr="192.168.1.247"
+ipaddr="192.168.1.86"
 mysql_sys_dir="./mysql_sys"
 
 #AliSql use 5.6 version so far
@@ -15,12 +15,8 @@ mysql_version="5.6"
 echo "Enable performance schema for ${mysql_version}!"
 
 if [[ $# -lt 1 ]] ; then
-    echo "Usage: enable_mysql_ps.sh <enable | disable | reset> { all | specific parts}"
+    echo "Usage: enable_mysql_ps.sh <show | enable | disable | reset> { all | specific parts}"
     exit 0
-fi
-
-if [ "x${1}" != "xenable" ] && [ "x${1}" != "xdisable" ] && [ "x${1}" != "xreset" ] ; then
-    echo "The first command should be enable or disable"
 fi
 
 part_cmd=""
@@ -53,11 +49,19 @@ exit
 EOF
 }
 
+show_ps_instruments() {
+${mysql} -h ${ipaddr} -u ${user} -p -P${port} << EOF
+select * from performance_schema.setup_instruments;
+EOF
+}
+
 if [ "${1}" == "enable" ] || [ "${1}" == "disable" ] ; then
     enable_ps_stats ${1} ${part_cmd}
 elif [ "${1}" == "reset" ]; then
     reset_ps_stats
-else 
+elif [ "${1}" == "show" ] ; then
+    show_ps_instruments
+else
     echo "Unknown command:${1}"
 fi
 popd > /dev/null
