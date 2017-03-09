@@ -3,7 +3,7 @@
 #One tool to display mysql performance schema informations
 
 user=mysql
-password="123456"
+password="Estuary12#$"
 mysql="/u01/my3306/bin/mysql"
 ipaddr="192.168.1.86"
 port="3306"

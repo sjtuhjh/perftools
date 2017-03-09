@@ -3,7 +3,7 @@
 #One tool to display mysql performance schema informations
 
 user=mysql
-password="123456"
+password="Estuary12#$"
 mysql="/usr/local/mariadb/bin/mysql"
 port="3306"
 ipaddr="192.168.1.86"
