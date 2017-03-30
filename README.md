@@ -14,7 +14,8 @@ To monitor linux system level performances, such as:
   - [systemmap](https://github.com/sjtuhjh/perftools/tree/master/systemmap)
   - [htop](https://github.com/sjtuhjh/perftools/blob/master/general/common/htop_setup.sh): One tool to replace top command
   - [Glances](https://github.com/sjtuhjh/perftools/blob/master/general/common/glances_setup.sh): One tool to display all in one screen
-  
+  - [pcstat](https://github.com/sjtuhjh/perftools/blob/master/general/common/pcstat_setup.sh): One tool to display page cache status for each file
+
 ## <a name="2">Application Monitoring Tools</a>
   - Applications
     - [MySQL](https://github.com/sjtuhjh/perftools/tree/master/apptools/mysql)
