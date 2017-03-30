@@ -7,11 +7,12 @@
 ## <a name="1">Linux System Monitoring Tools</a>
 To monitor linux system level performances, such as:
   - [perf](https://github.com/sjtuhjh/perftools/tree/master/perf)
+    - Examples : 
   - [ftrace](https://github.com/sjtuhjh/perftools/tree/master/ftrace)
   - [bcc](https://github.com/sjtuhjh/perftools/tree/master/bcc)
   - [lttng](https://github.com/sjtuhjh/perftools/tree/master/lttng)
   - [systemmap](https://github.com/sjtuhjh/perftools/tree/master/systemmap)
-  
+  - [htop](https://github.com/sjtuhjh/perftools/blob/master/general/common/htop_setup.sh): One tool to replace top command
   - [Glances](https://github.com/sjtuhjh/perftools/blob/master/general/common/glances_setup.sh): One tool to display all in one screen
   
 ## <a name="2">Application Monitoring Tools</a>
