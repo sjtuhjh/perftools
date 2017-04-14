@@ -29,7 +29,7 @@ To monitor linux system level performances, such as:
     - [MongoDB](https://github.com/sjtuhjh/perftools/tree/master/apptools/mongodb)
       - [MongoDB性能优化手册](https://github.com/sjtuhjh/perfdocs/blob/master/MongoDB%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96.pdf)
     - [Cassandra](https://github.com/sjtuhjh/perftools/tree/master/apptools/cassandra)
-      - [Cassandra性优化手册]
+      - [Cassandra性优化手册](https://github.com/sjtuhjh/perfdocs/blob/master/Cassandra%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96.pdf)
   - Languages
     - [JAVA JVM Tools](https://github.com/aragozin/jvm-tools)
  
