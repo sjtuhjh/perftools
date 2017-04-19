@@ -1,0 +1,152 @@
+#!/bin/sh
+# simple regression tester for toplev
+# this just tests if all events resolve etc, as it would
+# need the individual CPUs.
+# for non root set kernel.perf_event_paranoid = -1
+
+set -e
+
+WRAP=${WRAP:-}
+
+failed() {
+	echo FAILED
+}
+trap failed ERR 0
+
+. ./cpumap.sh
+
+cat >hello.c <<EOL
+#include <stdio.h>
+int main() {
+	printf("Hello world\n");
+	return 0;
+}
+EOL
+
+set -x
+
+LOAD="-- gcc -o /dev/null hello.c"
+LOAD0="-- taskset -c 0 gcc -o /dev/null hello.c"
+
+set -o pipefail
+
+SMTCPUS="snb jkt ivb ivt hsw hsx bdw skl bdx"
+NOSMTCPUS="slm simple"
+ALLCPUS="$SMTCPUS $NOSMTCPUS"
+
+if [ $(whoami) = root ] ; then
+	ALL="--all"
+else
+	ALL="--metrics -l5 --tsx --power"
+fi
+
+DCPU=hsw
+
+EVENTMAP=${cpus[$DCPU]} FORCECPU=$DCPU $WRAP ./toplev.py $LOAD
+
+# test with a locale that outputs FP numbers with , (github issue #43)
+LC_ALL=pl_PL.utf8 EVENTMAP=${cpus[$DCPU]} FORCECPU=$DCPU $WRAP ./toplev.py $LOAD
+
+DIRECT_MSR=1 EVENTMAP=${cpus[$DCPU]} FORCECPU=$DCPU $WRAP ./toplev.py $LOAD
+EVENTMAP=${cpus[$DCPU]} FORCECPU=$DCPU $WRAP ./toplev.py --no-desc -d -l4 $LOAD
+EVENTMAP=${cpus[$DCPU]} FORCECPU=$DCPU $WRAP ./toplev.py --no-desc -d -l4 --single-thread $LOAD
+EVENTMAP=${cpus[$DCPU]} FORCECPU=$DCPU $WRAP ./toplev.py --no-desc -d -l4 --single-thread --columns $LOAD
+EVENTMAP=${cpus[$DCPU]} FORCECPU=$DCPU $WRAP ./toplev.py --no-desc -d --all --core S0-C0-T0 $LOAD0
+EVENTMAP=${cpus[$DCPU]} FORCECPU=$DCPU $WRAP ./toplev.py --no-desc -v -d -l4 $LOAD
+EVENTMAP=${cpus[$DCPU]} FORCECPU=$DCPU $WRAP ./toplev.py --no-desc -x, -v -d -l4 $LOAD
+EVENTMAP=${cpus[$DCPU]} FORCECPU=$DCPU $WRAP ./toplev.py --no-desc -r2 -l4 $LOAD
+KERNEL_VERSION=2.1 EVENTMAP=${cpus[$DCPU]} FORCECPU=$DCPU $WRAP ./toplev.py --no-desc --all $LOAD
+EVENTMAP=${cpus[$DCPU]} FORCECPU=$DCPU $WRAP ./toplev.py --no-desc --metrics -x, -v -d -l4 $LOAD
+EVENTMAP=${cpus[$DCPU]} FORCECPU=$DCPU $WRAP ./toplev.py -g --raw -v --debug --stats -d $ALL --kernel $LOAD | tee log
+EVENTMAP=${cpus[$DCPU]} FORCECPU=$DCPU $WRAP ./toplev.py --no-desc --stats -d $ALL --kernel --valcsv val.csv --no-multiplex $LOAD | tee log
+grep :k log
+grep /k log
+EVENTMAP=${cpus[$DCPU]} FORCECPU=simple $WRAP ./toplev.py --no-desc -l1 $LOAD
+# check errata handling
+EVENTMAP=GenuineIntel-6-56 FORCECPU=bdw $WRAP ./toplev.py --force-events --no-desc --all $LOAD | tee log
+grep BDE70 log
+
+# test L1 uses a single group
+onegroup() {
+	grep perf $1 | tr -cd '{}' | awk ' { if ($1 != "{}") { print "more than one group for L1" ; exit(1); } } '
+}
+
+badschedules=0
+badschedlist=""
+
+checklog() {
+	if grep "not supported 100.00%" $1 ; then
+		echo "WARNING unsupported schedule in $1"
+		badschedules=$[$badschedules + 1]
+		badschedlist="$badschedlist $1"
+	fi
+}
+
+for j in $SMTCPUS ; do
+EVENTMAP=${cpus[$j]} FORCEHT=1 FORCECPU=$j $WRAP ./toplev.py -d -l1 $LOAD 2>&1 | tee log.$j
+onegroup log.$j
+checklog log.$j
+EVENTMAP=${cpus[$j]} FORCEHT=0 FORCECPU=$j $WRAP ./toplev.py -d -l1 $LOAD 2>&1 | tee log.$j
+onegroup log.$j
+EVENTMAP=${cpus[$j]} FORCEHT=1 FORCECPU=$j $WRAP ./toplev.py -d $ALL $LOAD 2>&1 | tee log.$j
+checklog log.$j
+EVENTMAP=${cpus[$j]} FORCEHT=0 FORCECPU=$j $WRAP ./toplev.py -d $ALL $LOAD 2>&1 | tee log.$j
+#checklog log.$j
+done
+
+for j in $NOSMTCPUS ; do
+EVENTMAP=${cpus[$j]} FORCECPU=$j $WRAP ./toplev.py -d -l1 $LOAD 2>&1 | tee log.$j
+onegroup log.$j
+checklog log.$j
+EVENTMAP=${cpus[$j]} FORCECPU=$j $WRAP ./toplev.py -d $ALL $LOAD 2>&1 | tee log.$j
+checklog log.$j
+done
+
+# misc features
+EVENTMAP=${cpus[hsw]} FORCECPU=hsw $WRAP ./toplev.py -d --stats --metrics --no-multiplex -l4 $LOAD
+EVENTMAP=${cpus[hsw]} FORCECPU=hsw $WRAP ./toplev.py -d --stats --metrics --no-multiplex --columns -l4 $LOAD
+EVENTMAP=${cpus[hsw]} FORCECPU=hsw $WRAP ./toplev.py -d --no-desc --power -l4 $LOAD
+EVENTMAP=${cpus[hsw]} FORCECPU=hsw $WRAP ./toplev.py -d --no-desc $ALL --no-group $LOAD
+EVENTMAP=${cpus[hsw]} FORCECPU=hsw $WRAP ./toplev.py -d --no-desc --sw -l4 $LOAD
+if python -c 'import matplotlib.pyplot' ; then
+EVENTMAP=${cpus[hsw]} FORCECPU=hsw $WRAP ./toplev.py --graph -o x.png -d --metrics -l4 $LOAD
+fi
+EVENTMAP=${cpus[ivb]} FORCECPU=ivb $WRAP ./toplev.py -d -l4 -I 100 sleep 1
+EVENTMAP=${cpus[ivb]} FORCECPU=ivb $WRAP ./toplev.py -o log -m -l4 -I 100 $LOAD
+grep IPC log
+EVENTMAP=${cpus[ivb]} FORCECPU=ivb $WRAP ./toplev.py -d -l4 -I 100 --columns sleep 1
+EVENTMAP=${cpus[ivb]} FORCECPU=ivb $WRAP ./toplev.py -d -l4 -I 100 --columns -x, sleep 1
+EVENTMAP=${cpus[ivb]} FORCECPU=ivb $WRAP ./toplev.py -d -l4 --valcsv val.csv --user $LOAD | tee log
+grep :u log
+grep /u log
+EVENTMAP=${cpus[hsw]} FORCECPU=hsw $WRAP ./toplev.py --all --sample-repeat 10 -a sleep 0.1  | tee log
+# do all perf.data exist?
+rm perf.data.{1,2,3,4,5,6,7,8,9,10}
+
+# need new perf
+# test other perf output formats
+#EVENTMAP=${cpus[snb]} FORCEHT=0 FORCECPU=snb $WRAP ./toplev.py -d -l4 -I 1000 -a --per-core sleep 1
+#EVENTMAP=${cpus[snb]} FORCEHT=0 FORCECPU=snb $WRAP ./toplev.py -d -l4 -I 1000 -a --per-socket sleep 1
+#EVENTMAP=${cpus[snb]} FORCEHT=0 FORCECPU=snb $WRAP ./toplev.py -d --no-desc -l4 -I 1000 -a -A sleep 1
+
+EVENTMAP=${cpus[hsx]} FORCECPU=hsx $WRAP ./toplev.py  -l4 true
+
+$WRAP ./toplev.py -o /dev/null --no-desc -v -l5 --run-sample $LOAD
+for cpu in $SMTCPUS ; do
+EVENTMAP=${cpus[$cpu]} FORCECPU=$cpu $WRAP ./toplev.py -o /dev/null --no-desc -v --all --show-sample $LOAD >&log
+cat log
+grep -v UNC log | grep "not found" && exit 1
+grep /p log
+[ "$cpu" = hsw ] && grep /pp log
+done
+for cpu in $NOSMTCPUS ; do
+EVENTMAP=${cpus[$cpu]} FORCECPU=$cpu $WRAP ./toplev.py -o /dev/null --no-desc -v --all --show-sample $LOAD >&log
+cat log
+grep -v UNC log | grep "not found" && exit 1
+done
+
+trap "" ERR 0
+
+echo
+echo "$badschedules bad schedules: $badschedlist"
+echo "SUCCEEDED"

@@ -1,0 +1,183 @@
+#!/bin/sh
+# simple tester for ocperf
+
+set -x
+
+PERF=${PERF:-perf}
+WRAP=${WRAP:-}
+
+
+failed() {
+	echo FAILED
+}
+trap failed ERR 0
+
+. ./cpumap.sh
+
+#for j in ${cpus[@]} ; do
+#	if [ ! -r ~/.events/$j-core.json ] ; then
+#		./event_download $j
+#	fi
+#done
+
+# handle unknown event
+$PERF stat -e branch-misses true
+
+checklist()
+{
+	echo cpu $1 = ${cpus[$1]}
+
+	# just see that it doesn't fail
+	EVENTMAP=${cpus[$1]} $WRAP ./ocperf.py list > /dev/null
+
+	# see if all events are visible
+	R=$(EVENTMAP=${cpus[$1]} $WRAP ./ocperf.py list | wc -l)
+	if [ $[$R - $BASELEN] -lt $2 ]; then
+		echo $1 list mismatch $[$R - $BASELEN]
+		exit 1
+	fi
+}
+
+BASELEN=$($PERF list | wc -l)
+
+checklist hsw 100
+checklist hsx 100
+checklist wsm-sp 100
+checklist wsm-dp 100
+checklist snb-client 100
+checklist jkt 100
+checklist ivb-client 100
+checklist nhm-ex 100
+checklist nhm-ep 100
+checklist bnl 100
+checklist ivt 100
+checklist slm 100
+checklist bdw-de 100
+checklist bdw 100
+checklist skl 100
+
+set -e
+$WRAP ./ocperf.py stat -e inst_retired.any /bin/true
+
+# xxx cover new syntax too
+checkmsr()
+{
+	DIRECT_MSR=1 EVENTMAP=${cpus[$1]} $WRAP ./ocperf.py --print stat -e $2 /bin/true | grep "msr 1a6 ="
+}
+
+checkmsr wsm-dp OFFCORE_RESPONSE.ANY_DATA.ANY_CACHE_DRAM
+checkmsr nhm-ex OFFCORE_RESPONSE_0.ANY_DATA.ANY_CACHE_DRAM
+checkmsr hsw offcore_response.all_reads.l3_miss.any_response
+checkmsr hsw offcore_response.demand_data_rd.l3_hit.hit_other_core_no_fwd
+
+checkev()
+{
+	DIRECT_MSR=1 EVENTMAP=${cpus[$1]} $WRAP ./ocperf.py stat -e $2 /bin/true | egrep -- "-e $3"
+}
+checkev nhm-ep L1D.M_EVICT '(r451|cpu/event=0x51,umask=0x4/)'
+checkev nhm-ep L1D.M_EVICT:c4 r4000451
+checkev nhm-ex L1D.M_EVICT:c4 r4000451
+checkev wsm-dp L1D.M_EVICT:c4 r4000451
+checkev hsw DTLB_LOAD_MISSES.STLB_HIT_2M r4008 
+checkev ivb-client IDQ.DSB_CYCLES r1000879
+checkev snb-client IDQ.DSB_CYCLES r1000879
+checkev bnl snoop_stall_drv.self r407e
+checkev ivt uops_issued.core_stall_cycles r1a0010e
+
+cat >topology <<EOL
+/sys/devices/uncore_ha
+/sys/devices/uncore_ha/format/umask
+EOL
+
+checkuc()
+{
+	TOPOLOGY=topology \
+	EVENTMAP=${cpus[$1]} UNCORE=$2 $WRAP ./ocperf.py stat --print -e $3 /bin/true | egrep -- "$4"
+}
+
+checkuc hsw test-uncore.json unc_h_directory_lookup.no_snp 'uncore_ha(_[0-9]+)?/event=0xc,umask=0x2,name=unc_h_directory_lookup_no_snp(_[0-9]+)?/'
+
+checkmsr2()
+{
+	EVENTMAP=${cpus[$1]} DIRECT_MSR=1 $WRAP ./ocperf.py --print stat -e $2 /bin/true | grep "$3"
+}
+
+# FIXME: need to adapt to new event file format
+#checkmsr2 wsm-sp offcore_response.pf_rfo.remote_cache_hitm_1 "msr 1a7 = 820"
+checkmsr2 nhm-ex offcore_response_0.data_ifetch.any_location "msr 1a6 = ff77"
+# xxx add hsw
+checkmsr2 ivt offcore_response.all_data_rd.llc_hit.hit_other_core_no_fwd "msr 1a6 = 4003c0091"
+checkmsr2 jkt offcore_response.all_data_rd.llc_hit.hit_other_core_no_fwd "msr 1a6 = 4003c0091"
+checkmsr2 slm offcore_response.any_request.any_response "msr 1a6 = 18008"
+
+# parser checks
+checkp() 
+{
+	$WRAP ./ocperf.py --print stat -e "$1" > tlog
+	grep "$2" tlog
+}
+
+checkp_record() {
+	$WRAP ./ocperf.py --print record -e "$1" > tlog
+	grep "$2" tlog
+}
+export EVENTMAP=${cpus[hsw]}
+DIRECT_MSR=1 checkp BR_INST_RETIRED.CONDITIONAL 'r1c4$'
+DIRECT_MSR=1 checkp BR_INST_RETIRED.CONDITIONAL:p  'r1c4:p$'
+DIRECT_MSR=1 checkp BR_INST_RETIRED.CONDITIONAL:p  'r1c4:p$'
+DIRECT_MSR=1 checkp BR_INST_RETIRED.CONDITIONAL:ppp  'r1c4:ppp$'
+
+unset DIRECT_MSR
+checkp CPU_CLK_UNHALTED.THREAD:cmask=3 'cmask=3'
+checkp CPU_CLK_UNHALTED.THREAD:amt1 'any=1'
+checkp CPU_CLK_UNHALTED.THREAD:amt1:tx 'in_tx=1'
+checkp CPU_CLK_UNHALTED.THREAD:amt1:cp 'any=1'
+checkp CPU_CLK_UNHALTED.THREAD:c3 'cmask=3'
+checkp CPU_CLK_UNHALTED.THREAD:sa=10000 'period=10000'
+checkp CPU_CLK_UNHALTED.THREAD:ppp '/ppp'
+checkp INST_RETIRED.PREC_DIST "/p"
+
+# following tests need new enough perf
+
+checkp cpu/BR_INST_RETIRED.CONDITIONAL,foo=bar/  'event=0xc4,umask=0x1,name=br_inst_retired_conditional,foo=bar/$'
+checkp cpu/BR_INST_RETIRED.CONDITIONAL/  'event=0xc4,umask=0x1,name=br_inst_retired_conditional/$'
+checkp cpu/br_inst_retired.conditional/  'event=0xc4,umask=0x1,name=br_inst_retired_conditional/$'
+checkp cpu/BR_INST_RETIRED.CONDITIONAL,foo=bar/p  'event=0xc4,umask=0x1,name=br_inst_retired_conditional,foo=bar/p$'
+checkp cpu/BR_INST_RETIRED.CONDITIONAL,foo=bar/ppu  'event=0xc4,umask=0x1,name=br_inst_retired_conditional,foo=bar/ppu$'
+export EVENTMAP=${cpus[wsm-sp]}
+DIRECT_MSR=1 checkp l2_write.rfo.m_state:c4 'r4000827'
+unset DIRECT_MSR
+#checkp l2_write.rfo.m_state:c4 'cpu/event=0x27,umask=0x8,cmask=4,name=l2_write_rfo_m_state/'
+
+export EVENTMAP=${cpus[hsx]}
+# check :request :response syntax
+checkp OFFCORE_RESPONSE:request=DEMAND_RFO:response=LLC_MISS.REMOTE_HITM  \
+	cpu/event=0xb7,umask=0x1,offcore_rsp=0x107fc00002,name=offcore_response_request_demand_rfo_response_llc_miss_remote_hitm/
+
+checks()
+{
+	$WRAP ./ocperf.py stat -e "$1" true > tlog
+}
+
+checkr()
+{
+	$WRAP ./ocperf.py record -e "$1" true > tlog
+}
+
+checks '{cycles,cpu_clk_unhalted.thread,instructions}'
+checks '{cycles,cpu/cpu_clk_unhalted.thread,cmask=1/}'
+checks '{cpu/cpu_clk_unhalted.thread,cmask=1/u}'
+checkr '{cpu/cpu_clk_unhalted.thread,period=10000/u,instructions}:S'
+checkr '{cpu/cpu_clk_unhalted.thread,period=10000/u,cpu/cpu-cycles/,instructions}:S'
+checks '{cpu/cpu-cycles/,instructions}'
+checkr '{node-stores,instructions}:S'
+checkr '{cpu/cpu-cycles/,instructions}:S'
+checkr '{cpu/instructions,period=1000000/u,cpu_clk_unhalted.thread}:S'
+checkp 'cpu_clk_unhalted:period=123' 'period=123'
+
+checkp_record '{cpu/cpu_clk_unhalted.thread/,cpu/br_inst_retired.all_branches/}:S'  \
+	'{cpu/event=0x3c,umask=0x0,name=cpu_clk_unhalted_thread,period=2000003/,cpu/event=0xc4,umask=0x0,name=br_inst_retired_all_branches/}:S'
+trap "" ERR 0
+rm -f tlog
+
+echo SUCCEEDED

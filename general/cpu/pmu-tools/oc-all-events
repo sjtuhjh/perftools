@@ -1,0 +1,29 @@
+#!/bin/sh
+# convert all events for testing
+# needs GNU parallel
+set -e
+
+. ./cpumap.sh
+
+cpu()
+{
+	export EVENTMAP=${cpus[$1]}
+	./list-events.py | parallel -n1 ./ocperf.py --print stat -e  > /dev/null
+}
+
+if [ "$1" != "" ] ; then
+	cpu $1
+	exit 0
+fi
+
+cpu bnl
+cpu hsw
+cpu ivb
+cpu ivt
+cpu nhm-ep
+cpu nhm-ex
+cpu snb
+cpu snb-ep
+cpu wsm-dp
+cpu wsm-sp
+
