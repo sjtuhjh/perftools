@@ -1,0 +1,3 @@
+wordcount
+*.dSYM/
+node_modules/
