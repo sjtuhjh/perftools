@@ -31,4 +31,4 @@ OUT_FILE="${OUT_DIR}/perf_java_${OUT_SUFFIX}.svg"
 ${CUR_DIR}/perf_java.sh ${OUT_FILE}
 
 OUT_FILE="${OUT_DIR}/perf_${OUT_SUFFIX}.svg"
-${CUR_DIR}/perf.sh ${OUT_FILE}
+${CUR_DIR}/perf_nonjava.sh ${OUT_FILE}
