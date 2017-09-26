@@ -30,13 +30,12 @@ examples = """examples:
     ./tcprwlat -s                  # trace all TCP latency on server side (default to client side)
     ./tcprwlat -port 8983 -c -i 10 # trace both TCP connection latency and TCP latency between read and write pair operations
                                    # on client side for only port 8983 every 10 seconds
+    ./tcprwlat -t 10               # trace last for 10 seconds and exit
 """
 parser = argparse.ArgumentParser(
     description="Trace TCP connection and read/write latency",
     formatter_class=argparse.RawDescriptionHelpFormatter,
     epilog=examples)
-parser.add_argument("-t", "--timestamp", action="store_true",
-    help="include timestamp on output")
 parser.add_argument("-pid", "--pid",
     help="trace this PID only")
 parser.add_argument("-s", "--server",
@@ -47,6 +46,8 @@ parser.add_argument("-i", "--interval",
     help="trace time interval")
 parser.add_argument("-c", "--conn",
     help="trace tcp connection latency", action="store_true")
+parser.add_argument("-t", "--time",
+    help="trace time interval")
 
 args = parser.parse_args()
 debug = 0
@@ -203,10 +204,24 @@ if args.conn:
 
 interval=1
 if args.interval:
-    interval = float(args.interval)
+    interval = int(args.interval)
+
+total_time = 0xffff
+if args.time:
+   total_time = args.time
+goto_exit = 0
 
 while True:
-    sleep(interval)
+    if total_time > 0 and not args.interval:
+        sleep(interval)
+        goto_exit = 1
+    else :
+        sleep(interval)
+        if args.time:
+            total_time = float(total_time) - int(interval)
+        if total_time <= 0:
+            goto_exit = 1
+
     print("")
     print("===================================================================================")
 
@@ -220,5 +235,7 @@ while True:
     else :
         print("Second Historygram: Latency between sending TCP and receiving TCP after establishing connection")
 
-    b["rw_hist"].print_log2_hist("TCP latency in ms")
+    b["rw_hist"].print_log2_hist("TCP latency in ms(interval=" + str(int(interval)) +" seconds)")
     b["rw_hist"].clear()
+    if goto_exit:
+        break
