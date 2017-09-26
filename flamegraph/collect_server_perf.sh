@@ -27,6 +27,9 @@ fi
 
 ${CUR_DIR}/../bcc/bcc_scripts/tcprwlat.py ${FILTER_PORT} -s -i 10 -t 30 > ${OUT_FILE}
 
+OUT_FILE="${OUT_DIR}/offcputime_${OUT_SUFFIX}"
+/usr/share/bcc/tools/offcputime 30 > ${OUT_FILE}
+
 OUT_FILE="${OUT_DIR}/perf_java_${OUT_SUFFIX}.svg"
 ${CUR_DIR}/perf_java.sh ${OUT_FILE}
 
