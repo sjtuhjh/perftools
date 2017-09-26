@@ -24,6 +24,6 @@ if [ -f ${OUT_FILE} ] ; then
     echo "The  ${OUT_FILE} does exist. Do you want to overwirte it?"
     exit 0
 fi
-
+echo "Begin to capture tcp client data for about 30 seconds ..."
 ${CUR_DIR}/../bcc/bcc_scripts/tcprwlat.py ${FILTER_PORT} -c -i 10 -t 30 > ${OUT_FILE}
 

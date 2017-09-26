@@ -22,8 +22,8 @@ fi
 
 OUTPUT_FILE=${1:-perf_output.svg}
 
-print("Wait for perf record 60 seconds ...")
-perf record -F 99 -a -g -- sleep 60; ./FlameGraph/jmaps
+echo "Wait for perf record 60 seconds ..."
+perf record -F 99 -a -g -- sleep 60; ${CUR_DIR}/FlameGraph/jmaps
 perf script > out.stacks01
 cat out.stacks01 | ${CUR_DIR}/FlameGraph/stackcollapse-perf.pl | grep -v cpu_idle | ${CUR_DIR}/FlameGraph/flamegraph.pl --color=java --hash > ${OUTPUT_FILE}
 
