@@ -40,3 +40,5 @@ ${CUR_DIR}/perf_java.sh ${OUT_FILE}
 echo "Begin to capture non java perf data about 60 seconds"
 OUT_FILE="${OUT_DIR}/perf_${OUT_SUFFIX}.svg"
 ${CUR_DIR}/perf_nonjava.sh ${OUT_FILE}
+mv perf.data perf.data_${OUT_SUFFIX}
+
