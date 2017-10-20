@@ -227,7 +227,7 @@ while True:
 
     if args.conn:
         print("First Historygram: TCP Connection Lantency")
-        b["conn_hist"].print_log2_hist("TCP connection establishment latency in ms")
+        b["conn_hist"].print_log2_hist("TCP connection establishment latency in us")
         b["conn_hist"].clear()
 
     if args.server:
